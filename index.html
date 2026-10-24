@@ -74,6 +74,7 @@ dialog{max-width:540px;width:calc(100% - 28px);border:0;border-radius:16px;backg
 .addr{display:none}.f{border-bottom-color:#bbb}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 .pal{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.pal .pl{font-size:15px}.pal button{width:24px;height:24px;border-radius:50%;padding:0;border:2px solid var(--bar);box-shadow:0 0 0 1px var(--line);cursor:pointer;transition:transform .12s}.pal button:hover{transform:scale(1.18)}.pal button[aria-pressed=true]{box-shadow:0 0 0 2.5px var(--bart);transform:scale(1.12)}
+.pm-b button[data-w]{font-size:12px;font-weight:600;padding:9px 8px;background:transparent;color:var(--bart);border:1.5px solid var(--line)}.pm-b button[data-w][aria-pressed=true]{background:var(--gold);color:#2a1a1e;border-color:var(--gold)}
 </style>
 </head>
 <body>
@@ -175,21 +176,21 @@ $("#addr").onclick=()=>{collect();S.rows++;build();save(false)};
 $("#save").onclick=()=>save(true);
 $("#print").onclick=()=>{save(false);tipOff();document.activeElement&&document.activeElement.blur();pmAsk()};
 const PM={pdf:{w:210,h:297,n:"A4"},poster:{w:420,h:594,n:"A2"}};
-function pmAsk(){const ku=LG==="ku",d=$("#pdlg");d.innerHTML=`<h3>${ku?"چۆن دەتەوێت دەربچێت؟":"كيف تريد أن يظهر؟"}</h3><p>${ku?"هەموو زانیارییەکان لە یەک پەڕەدا دەبن.":"ستكون كل المعلومات في صفحة واحدة."}</p><div class="pm-b"><button data-m="pdf">PDF<small>A4</small></button><button data-m="poster">${ku?"پۆستەر":"بوستر"}<small>A2</small></button></div><button class="pm-x" data-m="">${ku?"پاشگەزبوونەوە":"إلغاء"}</button>`;d.showModal()}
+function pmAsk(){const ku=LG==="ku",d=$("#pdlg");d.innerHTML=`<h3>${ku?"چۆن دەتەوێت دەربچێت؟":"كيف تريد أن يظهر؟"}</h3><p>${ku?"هەموو زانیارییەکان لە یەک پەڕەدا دەبن.":"ستكون كل المعلومات في صفحة واحدة."}</p><div class="pm-b"><button data-m="pdf">PDF<small>A4</small></button><button data-m="poster">${ku?"پۆستەر":"بوستر"}<small>A2</small></button></div>${MOB()?`<p style="font-size:12px;margin-top:12px;opacity:.8">${ku?"شێوازی دروستکردن:":"طريقة الإنشاء:"}</p><div class="pm-b" style="margin-top:6px"><button data-w="file" aria-pressed="${pmWay==="file"}">${ku?"فایلی PDF (لە تێلێگرام کار دەکات)":"ملف PDF مباشر (يعمل في تيليجرام)"}</button><button data-w="print" aria-pressed="${pmWay==="print"}">${ku?"چاپکردنی وێبگەڕ (Safari/Chrome، باشترین کوالیتی)":"طباعة المتصفح (Safari/Chrome، أعلى جودة)"}</button></div>`:""}<button class="pm-x" data-m="">${ku?"پاشگەزبوونەوە":"إلغاء"}</button>`;d.showModal()}
 function pmNative(k){const m=PM[k],P=document.querySelector(".poster"),mm=v=>v/25.4*96;document.querySelectorAll("textarea").forEach(fit);
 const st=document.createElement("style");st.id="pmst";st.textContent=`@page{size:${m.n} portrait;margin:0}body.pm .poster{width:760px!important;max-width:none!important}@media print{html,body{margin:0!important;padding:0!important;background:#fff!important}body.pm .wrap{padding:0!important;overflow:hidden!important}body.pm .poster{zoom:var(--pz);margin:0 auto!important;border-radius:0!important;box-shadow:none!important;font-size:inherit!important}}`;
 document.head.appendChild(st);document.body.classList.add("pm");document.querySelectorAll("textarea").forEach(fit);
 const H=P.getBoundingClientRect().height,z=Math.min(mm(m.w)/760,mm(m.h)/H)*0.99;document.body.style.setProperty("--pz",z);
 const done=()=>{document.body.classList.remove("pm");document.body.style.removeProperty("--pz");const e=document.getElementById("pmst");e&&e.remove();window.removeEventListener("afterprint",done);document.querySelectorAll("textarea").forEach(fit)};
 window.addEventListener("afterprint",()=>setTimeout(done,MOB()?10000:0));setTimeout(()=>window.print(),60)}
-const MOB=()=>/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&innerWidth<1100);
+const MOB=()=>/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1&&screen.width<1100);let pmWay="file";
 const LD=u=>new Promise((o,e)=>{const x=document.createElement("script");x.src=u;x.onload=o;x.onerror=e;document.head.appendChild(x)});
 KU["جارٍ إنشاء ملف PDF…"]="فایلی PDF دروست دەکرێت…";KU["تم إنشاء PDF ✓"]="PDF دروست کرا ✓";KU["تعذّر إنشاء PDF، سيتم فتح الطباعة"]="PDF دروست نەکرا، چاپکردن دەکرێتەوە";
 KU["تم إنشاء ملف PDF"]="فایلی PDF ئامادەیە";KU["مشاركة / حفظ"]="هاوبەشکردن / پاشەکەوتکردن";KU["فتح الملف"]="کردنەوەی فایل";KU["إن لم يعمل الحفظ داخل تطبيق (تيليجرام…) افتح الصفحة في Safari أو Chrome."]="ئەگەر لە ناو ئەپێک (تێلێگرام…) پاشەکەوت نەبوو، پەڕەکە لە Safari یان Chrome بکەرەوە.";
 function pmDone(blob,name){const u=URL.createObjectURL(blob),f=new File([blob],name,{type:"application/pdf"}),d=$("#pdlg"),can=navigator.canShare&&navigator.canShare({files:[f]});
 d.innerHTML=`<h3>${t("تم إنشاء ملف PDF")} ✓</h3><div class="pm-b">${can?`<button id="pms">${t("مشاركة / حفظ")}</button>`:""}<a id="pmo" href="${u}" target="_blank" rel="noopener" download="${name}" style="flex:1;text-align:center;padding:14px 10px;border-radius:10px;font-weight:700;background:var(--gold);color:#2a1a1e;text-decoration:none">${t("فتح الملف")}</a></div><p style="font-size:12px;opacity:.75">${t("إن لم يعمل الحفظ داخل تطبيق (تيليجرام…) افتح الصفحة في Safari أو Chrome.")}</p><button class="pm-x" id="pmx">${t("إغلاق")}</button>`;
 d.showModal();$("#pmx").onclick=()=>d.close();const b=$("#pms");if(b)b.onclick=()=>navigator.share({files:[f],title:name}).catch(()=>{})}
-async function pmPrint(k){if(!MOB())return pmNative(k);
+async function pmPrint(k){if(!MOB()||pmWay==="print")return pmNative(k);
 const m=PM[k],P=document.querySelector(".poster"),ph=[...document.querySelectorAll("[placeholder]")].map(e=>[e,e.placeholder]);let st=null;say(t("جارٍ إنشاء ملف PDF…"));
 try{
 if(!window.html2canvas)await LD("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
@@ -198,14 +199,14 @@ collect();st=document.createElement("style");st.textContent=".pmcap .poster{widt
 document.body.classList.add("pmcap");ph.forEach(([e])=>e.placeholder="");
 await new Promise(r=>setTimeout(r,120));document.querySelectorAll("textarea").forEach(fit);
 const H=P.getBoundingClientRect().height,sc=Math.min(k==="poster"?3:2.5,Math.sqrt(12e6/(760*H)));
-const CL=d=>{const w=d.defaultView,z=d.createElement("style");z.textContent="*{letter-spacing:0!important}";d.head.appendChild(z);const PR=["fontFamily","fontSize","fontWeight","color","textAlign","direction","lineHeight","backgroundColor","width","marginTop","marginBottom","paddingTop","paddingRight","paddingBottom","paddingLeft","borderTopWidth","borderTopStyle","borderTopColor","borderRightWidth","borderRightStyle","borderRightColor","borderBottomWidth","borderBottomStyle","borderBottomColor","borderLeftWidth","borderLeftStyle","borderLeftColor","borderRadius"];d.querySelectorAll("input.f,textarea.f").forEach(e=>{const c=w.getComputedStyle(e),x=d.createElement("div");x.className=e.className;x.textContent=e.value;PR.forEach(q=>x.style[q]=c[q]);x.style.minHeight=c.height;x.style.display="block";x.style.boxSizing="border-box";x.style.whiteSpace="pre-wrap";x.style.overflowWrap="anywhere";e.replaceWith(x)})};
+const CL=d=>{const w=d.defaultView,z=d.createElement("style");z.textContent="*{letter-spacing:0!important}";d.head.appendChild(z);const PR=["fontFamily","fontSize","fontWeight","color","textAlign","direction","lineHeight","backgroundColor","width","marginTop","marginBottom","paddingTop","paddingRight","paddingBottom","paddingLeft","borderTopWidth","borderTopStyle","borderTopColor","borderRightWidth","borderRightStyle","borderRightColor","borderBottomWidth","borderBottomStyle","borderBottomColor","borderLeftWidth","borderLeftStyle","borderLeftColor","borderRadius"];d.querySelectorAll("input.f,textarea.f").forEach(e=>{const c=w.getComputedStyle(e),x=d.createElement("div");x.className=e.className;x.textContent=e.value;PR.forEach(q=>x.style[q]=c[q]);x.style.minHeight=c.height;x.style.display="block";x.style.boxSizing="border-box";x.style.whiteSpace="pre-wrap";e.replaceWith(x)})};
 const O=fo=>({scale:sc,backgroundColor:"#ffffff",useCORS:true,foreignObjectRendering:fo,windowWidth:900,logging:false,onclone:CL}),blank=z=>{const d=z.getContext("2d").getImageData(0,0,z.width,Math.min(z.height,400)).data;let n=0;for(let q=0;q<d.length;q+=388)if(d[q]<250||d[q+1]<250)n++;return n<5};
 let c;try{c=await html2canvas(P,O(true));if(blank(c))throw 0}catch(_){c=await html2canvas(P,O(false))}
 const pdf=new window.jspdf.jsPDF({orientation:"portrait",unit:"mm",format:[m.w,m.h]}),r=Math.min(m.w/c.width,m.h/c.height),w=c.width*r,h=c.height*r;
 pdf.addImage(c.toDataURL("image/jpeg",.92),"JPEG",(m.w-w)/2,(m.h-h)/2,w,h);pmDone(pdf.output("blob"),"poster-"+m.n+".pdf")
 }catch(e){say(t("تعذّر إنشاء PDF، سيتم فتح الطباعة"));document.body.classList.remove("pmcap");pmNative(k)}
 finally{document.body.classList.remove("pmcap");ph.forEach(([e,v])=>e.placeholder=v);st&&st.remove();document.querySelectorAll("textarea").forEach(fit)}}
-$("#pdlg").addEventListener("click",e=>{const b=e.target.closest("button[data-m]");if(!b)return;$("#pdlg").close();if(b.dataset.m)pmPrint(b.dataset.m)});window.addEventListener("beforeprint",()=>tipOff());
+$("#pdlg").addEventListener("click",e=>{const w=e.target.closest("button[data-w]");if(w){pmWay=w.dataset.w;$("#pdlg").querySelectorAll("button[data-w]").forEach(x=>x.setAttribute("aria-pressed",x===w));return}const b=e.target.closest("button[data-m]");if(!b)return;$("#pdlg").close();if(b.dataset.m)pmPrint(b.dataset.m)});window.addEventListener("beforeprint",()=>tipOff());
 $("#reset").onclick=()=>{if(confirm(t("سيتم مسح كل ما كتبته. متأكد؟"))){S={rows:2,grp:0,lang:LG,theme:S.theme||0};try{localStorage.removeItem(KEY)}catch(e){}build();grp();$("#hint").textContent=t("تم المسح. اختر مجموعتك للبدء.")}};
 $("#lang").onclick=()=>setLang(LG==="ar"?"ku":"ar");$("#info").onclick=info;$("#dx").onclick=()=>$("#dlg").close();
 const HELP={
