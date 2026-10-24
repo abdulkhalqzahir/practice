@@ -38,7 +38,7 @@ h2{color:var(--rose);font-size:19px;margin:0 0 12px;font-weight:800}
 .ico{width:38px;height:38px;border-radius:50%;background:var(--rose);color:#fff;display:inline-grid;place-items:center;font-size:17px;flex:none}
 .row{display:flex;gap:10px;align-items:center;margin:9px 0;font-weight:700;color:var(--wine)}
 .row>span{white-space:nowrap}
-.f{font:inherit;color:inherit;background:transparent;border:0;border-bottom:1.5px dotted color-mix(in srgb,var(--wine) 50%,#fff);width:100%;padding:3px 2px;resize:none}
+.f{font:inherit;color:inherit;background:transparent;border:0;border-bottom:1.5px dotted var(--dot,#8a6a72);width:100%;padding:3px 2px;resize:none}
 textarea.f{display:block;overflow:hidden;line-height:1.7}
 .f::placeholder{color:#b9a6ab}
 .ttl.f{border-bottom-color:#ffffff66}.ttl::placeholder{color:#ffffff88}
@@ -63,7 +63,7 @@ td:first-child{border-radius:0 12px 12px 0}td:last-child{border-radius:12px 0 0 
 .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .two h3{margin:0 0 8px;color:var(--wine);font-size:15px}
 .two .f{margin:5px 0}
-.mem{background:color-mix(in srgb,var(--rose) 22%,#fff);border-radius:14px;padding:14px 20px;display:flex;gap:10px;align-items:center;font-weight:800;color:var(--wine)}
+.mem{background:var(--mem,#ead0d6);border-radius:14px;padding:14px 20px;display:flex;gap:10px;align-items:center;font-weight:800;color:var(--wine)}
 .ft{text-align:center;font-size:11px;color:#7a6469;margin:16px 34px 0}
 .fillbar{position:sticky;bottom:0;z-index:5;background:var(--bar);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}.fillbar button{font:inherit;font-weight:800;font-size:15px;border:0;border-radius:10px;background:var(--gold);color:#2a1a1e;padding:10px 24px;cursor:pointer}#fs{font-size:13px}
 #tip{position:fixed;z-index:50;max-width:280px;background:var(--wine);color:#fff;padding:9px 13px;border-radius:10px;font-size:13px;line-height:1.7;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 4px 16px #0006;border:1px solid var(--gold)}#tip.on{opacity:1}
@@ -175,12 +175,29 @@ $("#save").onclick=()=>save(true);
 $("#print").onclick=()=>{save(false);tipOff();document.activeElement&&document.activeElement.blur();pmAsk()};
 const PM={pdf:{w:210,h:297,n:"A4"},poster:{w:420,h:594,n:"A2"}};
 function pmAsk(){const ku=LG==="ku",d=$("#pdlg");d.innerHTML=`<h3>${ku?"چۆن دەتەوێت دەربچێت؟":"كيف تريد أن يظهر؟"}</h3><p>${ku?"هەموو زانیارییەکان لە یەک پەڕەدا دەبن.":"ستكون كل المعلومات في صفحة واحدة."}</p><div class="pm-b"><button data-m="pdf">PDF<small>A4</small></button><button data-m="poster">${ku?"پۆستەر":"بوستر"}<small>A2</small></button></div><button class="pm-x" data-m="">${ku?"پاشگەزبوونەوە":"إلغاء"}</button>`;d.showModal()}
-function pmPrint(k){const m=PM[k],P=document.querySelector(".poster"),mm=v=>v/25.4*96;document.querySelectorAll("textarea").forEach(fit);
+function pmNative(k){const m=PM[k],P=document.querySelector(".poster"),mm=v=>v/25.4*96;document.querySelectorAll("textarea").forEach(fit);
 const st=document.createElement("style");st.id="pmst";st.textContent=`@page{size:${m.n} portrait;margin:0}body.pm .poster{width:760px!important;max-width:none!important}@media print{html,body{margin:0!important;padding:0!important;background:#fff!important}body.pm .wrap{padding:0!important;overflow:hidden!important}body.pm .poster{zoom:var(--pz);margin:0 auto!important;border-radius:0!important;box-shadow:none!important;font-size:inherit!important}}`;
 document.head.appendChild(st);document.body.classList.add("pm");document.querySelectorAll("textarea").forEach(fit);
 const H=P.getBoundingClientRect().height,z=Math.min(mm(m.w)/760,mm(m.h)/H)*0.99;document.body.style.setProperty("--pz",z);
 const done=()=>{document.body.classList.remove("pm");document.body.style.removeProperty("--pz");const e=document.getElementById("pmst");e&&e.remove();window.removeEventListener("afterprint",done);document.querySelectorAll("textarea").forEach(fit)};
-window.addEventListener("afterprint",done);setTimeout(()=>window.print(),60)}
+window.addEventListener("afterprint",()=>setTimeout(done,MOB()?10000:0));setTimeout(()=>window.print(),60)}
+const MOB=()=>/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&innerWidth<1100);
+const LD=u=>new Promise((o,e)=>{const x=document.createElement("script");x.src=u;x.onload=o;x.onerror=e;document.head.appendChild(x)});
+KU["جارٍ إنشاء ملف PDF…"]="فایلی PDF دروست دەکرێت…";KU["تم إنشاء PDF ✓"]="PDF دروست کرا ✓";KU["تعذّر إنشاء PDF، سيتم فتح الطباعة"]="PDF دروست نەکرا، چاپکردن دەکرێتەوە";
+async function pmPrint(k){if(!MOB())return pmNative(k);
+const m=PM[k],P=document.querySelector(".poster"),ph=[...document.querySelectorAll("[placeholder]")].map(e=>[e,e.placeholder]);let st=null;say(t("جارٍ إنشاء ملف PDF…"));
+try{
+if(!window.html2canvas)await LD("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+if(!(window.jspdf&&window.jspdf.jsPDF))await LD("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+collect();st=document.createElement("style");st.textContent=".pmcap .poster{width:760px!important;max-width:none!important;margin:0!important;box-shadow:none!important;border-radius:0!important}.pmcap .wrap{overflow:visible!important;padding:0!important}";document.head.appendChild(st);
+document.body.classList.add("pmcap");ph.forEach(([e])=>e.placeholder="");
+await new Promise(r=>setTimeout(r,120));document.querySelectorAll("textarea").forEach(fit);
+const H=P.getBoundingClientRect().height,sc=Math.min(k==="poster"?3:2.5,Math.sqrt(12e6/(760*H)));
+const c=await html2canvas(P,{scale:sc,backgroundColor:"#ffffff",useCORS:true,windowWidth:900,logging:false});
+const pdf=new window.jspdf.jsPDF({orientation:"portrait",unit:"mm",format:[m.w,m.h]}),r=Math.min(m.w/c.width,m.h/c.height),w=c.width*r,h=c.height*r;
+pdf.addImage(c.toDataURL("image/jpeg",.92),"JPEG",(m.w-w)/2,(m.h-h)/2,w,h);pdf.save("poster-"+m.n+".pdf");say(t("تم إنشاء PDF ✓"))
+}catch(e){say(t("تعذّر إنشاء PDF، سيتم فتح الطباعة"));document.body.classList.remove("pmcap");pmNative(k)}
+finally{document.body.classList.remove("pmcap");ph.forEach(([e,v])=>e.placeholder=v);st&&st.remove();document.querySelectorAll("textarea").forEach(fit)}}
 $("#pdlg").addEventListener("click",e=>{const b=e.target.closest("button[data-m]");if(!b)return;$("#pdlg").close();if(b.dataset.m)pmPrint(b.dataset.m)});window.addEventListener("beforeprint",()=>tipOff());
 $("#reset").onclick=()=>{if(confirm(t("سيتم مسح كل ما كتبته. متأكد؟"))){S={rows:2,grp:0,lang:LG,theme:S.theme||0};try{localStorage.removeItem(KEY)}catch(e){}build();grp();$("#hint").textContent=t("تم المسح. اختر مجموعتك للبدء.")}};
 $("#lang").onclick=()=>setLang(LG==="ar"?"ku":"ar");$("#info").onclick=info;$("#dx").onclick=()=>$("#dlg").close();
@@ -256,7 +273,7 @@ KU['تعبئة كل الخانات حسب المجموعة']='هەموو خان�
 HELP.fillall=['يملأ كل خانات البوستر بمثال مناسب للمجموعة التي اخترتها من الأعلى (١ إلى ٦) بلغة الواجهة الحالية. سيستبدل ما كتبته.','هەموو خانەکانی پۆستەر بە نموونەیەکی گونجاو بۆ ئەو گروپەی لە سەرەوە هەڵتبژاردووە (١ تا ٦) بە زمانی ئێستای ڕووکار پڕ دەکاتەوە. ئەوەی نووسیوتە دەگۆڕێت.'];
 $('#fillall').onclick=()=>{collect();if(!S.grp){$('#fs').textContent=t('اختر مجموعتك من الأعلى أولاً');setTimeout(()=>$('#fs').textContent='',3000);return}const g=S.grp;if(FILL.some(k=>S[k])&&!confirm(t('سيتم استبدال ما كتبته بالمثال. متأكد؟')))return;Object.assign(S,ex(g,LG),{rows:g===3?3:2,gno:String(g),title:TT(g,LG)});build();grp();hint();save(false)};
 const TH=[["شرابي","شەرابی","#5a0a1e","#8f1536","#c9a24b","#f6eaec","#f1e3c0"],["أزرق ملكي","شینی شاهانە","#0f2a5c","#2a56a8","#e2b04a","#e8eefb","#f3e8c9"],["أخضر زمردي","سەوزی زمروت","#0b4d3a","#17805f","#d4a93c","#e6f4ee","#efe6c4"],["بنفسجي","مۆر","#3b1a63","#6b34a8","#e0b24a","#f0e8fa","#f3e6c6"],["برتقالي","پرتەقاڵی","#8a3a07","#c4580f","#f2b84b","#fdeee0","#f7e6b8"],["فيروزي","فیرۆزەیی","#0b4f5c","#0e8a9a","#f2b84b","#e3f4f6","#f0e6c4"],["وردي","پەمەیی","#8a1650","#c2306f","#e0b24a","#fde8f1","#f6e6c8"],["أسود وذهبي","ڕەش و زێڕین","#1b1b1f","#3a3a44","#d4a73a","#f0eeea","#efe3bf"],["كحلي رمادي","شینی تۆخی خۆڵەمێشی","#2c3e50","#4b6584","#f0b429","#e9eef3","#f1e6c3"],["بني قهوة","قاوەیی","#4a2c1a","#7a4a2e","#d9a441","#f5ebe3","#efe0b8"]];
-function applyTheme(){const x=TH[S.theme||0]||TH[0],r=document.documentElement.style;["--wine","--rose","--gold","--blush","--sand"].forEach((v,i)=>r.setProperty(v,x[i+2]))}
+function applyTheme(){const x=TH[S.theme||0]||TH[0],r=document.documentElement.style;const mx=(a,b,p)=>{const f=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)),A=f(a),B=f(b);return"#"+A.map((v,i)=>Math.round(v*p+B[i]*(1-p)).toString(16).padStart(2,"0")).join("")};r.setProperty("--mem",mx(x[3],"#ffffff",.22));r.setProperty("--dot",mx(x[2],"#ffffff",.5));["--wine","--rose","--gold","--blush","--sand"].forEach((v,i)=>r.setProperty(v,x[i+2]))}
 function pal(){$("#pal").innerHTML='<span class="pl">🎨</span>'+TH.map((x,i)=>`<button data-th="${i}" title="${LG==="ku"?x[1]:x[0]}" aria-label="${x[0]}" aria-pressed="${(S.theme||0)===i}" style="background:linear-gradient(135deg,${x[2]} 50%,${x[4]} 50%)"></button>`).join("")}
 $("#pal").onclick=e=>{const b=e.target.closest("[data-th]");if(!b)return;S.theme=+b.dataset.th;applyTheme();pal();save(false)};
 applyTheme();
