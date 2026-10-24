@@ -63,7 +63,7 @@ td:first-child{border-radius:0 12px 12px 0}td:last-child{border-radius:12px 0 0 
 .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .two h3{margin:0 0 8px;color:var(--wine);font-size:15px}
 .two .f{margin:5px 0}
-.mem{background:var(--mem,#ead0d6);border-radius:14px;padding:14px 20px;display:flex;gap:10px;align-items:center;font-weight:800;color:var(--wine)}
+.mem{background:var(--mem,#ead0d6);border-radius:14px;padding:14px 20px;display:flex;flex-direction:column;gap:6px;align-items:stretch;font-weight:800;color:var(--wine)}.mem textarea{min-width:0;width:100%;line-height:1.9}
 .ft{text-align:center;font-size:11px;color:#7a6469;margin:16px 34px 0}
 .fillbar{position:sticky;bottom:0;z-index:5;background:var(--bar);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}.fillbar button{font:inherit;font-weight:800;font-size:15px;border:0;border-radius:10px;background:var(--gold);color:#2a1a1e;padding:10px 24px;cursor:pointer}#fs{font-size:13px}
 #tip{position:fixed;z-index:50;max-width:280px;background:var(--wine);color:#fff;padding:9px 13px;border-radius:10px;font-size:13px;line-height:1.7;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 4px 16px #0006;border:1px solid var(--gold)}#tip.on{opacity:1}
@@ -125,7 +125,7 @@ dialog{max-width:540px;width:calc(100% - 28px);border:0;border-radius:16px;backg
   </section>
 
   <section class="sec"><div class="win"><h4 style="margin:0 0 6px">التوفر محلياً (إن وُجد):</h4><textarea class="f" rows="2" data-k="local"></textarea></div></section>
-  <section class="sec"><div class="mem"><span>أسماء أعضاء المجموعة:</span><input class="f" data-k="members"></div></section>
+  <section class="sec"><div class="mem"><span>أسماء أعضاء المجموعة:</span><textarea class="f" rows="3" data-k="members" aria-label="أسماء أعضاء المجموعة"></textarea></div></section>
   <div class="ft">تدريسي المادة: سالار صديق محمد – مدرس مساعد · كلية الإدارة والاقتصاد، قسم المحاسبة، جامعة صلاح الدين – أربيل</div>
 </main></div>
 
@@ -168,6 +168,7 @@ function save(m){collect();try{localStorage.setItem(KEY,JSON.stringify(S));if(m)
 function build(){
   $("#tb").innerHTML=Array.from({length:S.rows},(_,i)=>"<tr>"+[0,1,2].map(c=>`<td><textarea class="f" rows="1" data-k="t${i}_${c}" aria-label="برنامج ${i+1}"></textarea></td>`).join("")+"</tr>").join("");
   $("#fn").innerHTML=FN.map(f=>`<div class="box"><span class="ico">${f[1]}</span><b>${t(f[0])}</b><textarea class="f" rows="1" data-k="${f[2]}"></textarea></div>`).join("");
+  if(S.members&&!/\n/.test(S.members))S.members=S.members.split(/\s*[,،]\s*/).filter(Boolean).join("\n");
   document.querySelectorAll("[data-k]").forEach(e=>{e.value=S[e.dataset.k]||"";e.addEventListener("input",()=>{fit(e);clearTimeout(window._t);window._t=setTimeout(()=>save(false),500)});fit(e)});
 }
 $("#addr").onclick=()=>{collect();S.rows++;build();save(false)};
@@ -193,7 +194,7 @@ collect();st=document.createElement("style");st.textContent=".pmcap .poster{widt
 document.body.classList.add("pmcap");ph.forEach(([e])=>e.placeholder="");
 await new Promise(r=>setTimeout(r,120));document.querySelectorAll("textarea").forEach(fit);
 const H=P.getBoundingClientRect().height,sc=Math.min(k==="poster"?3:2.5,Math.sqrt(12e6/(760*H)));
-const c=await html2canvas(P,{scale:sc,backgroundColor:"#ffffff",useCORS:true,windowWidth:900,logging:false});
+const c=await html2canvas(P,{scale:sc,backgroundColor:"#ffffff",useCORS:true,windowWidth:900,logging:false,onclone:d=>{const w=d.defaultView,z=d.createElement("style");z.textContent="*{letter-spacing:0!important}";d.head.appendChild(z);const PR=["fontFamily","fontSize","fontWeight","color","textAlign","direction","lineHeight","backgroundColor","width","marginTop","marginBottom","paddingTop","paddingRight","paddingBottom","paddingLeft","borderTopWidth","borderTopStyle","borderTopColor","borderRightWidth","borderRightStyle","borderRightColor","borderBottomWidth","borderBottomStyle","borderBottomColor","borderLeftWidth","borderLeftStyle","borderLeftColor","borderRadius"];d.querySelectorAll("input.f,textarea.f").forEach(e=>{const c=w.getComputedStyle(e),x=d.createElement("div");x.className=e.className;x.textContent=e.value;PR.forEach(q=>x.style[q]=c[q]);x.style.minHeight=c.height;x.style.display="block";x.style.boxSizing="border-box";x.style.whiteSpace="pre-wrap";x.style.overflowWrap="anywhere";e.replaceWith(x)})}});
 const pdf=new window.jspdf.jsPDF({orientation:"portrait",unit:"mm",format:[m.w,m.h]}),r=Math.min(m.w/c.width,m.h/c.height),w=c.width*r,h=c.height*r;
 pdf.addImage(c.toDataURL("image/jpeg",.92),"JPEG",(m.w-w)/2,(m.h-h)/2,w,h);pdf.save("poster-"+m.n+".pdf");say(t("تم إنشاء PDF ✓"))
 }catch(e){say(t("تعذّر إنشاء PDF، سيتم فتح الطباعة"));document.body.classList.remove("pmcap");pmNative(k)}
@@ -224,7 +225,7 @@ chars:['خصائص النظام المحوسب التي يحققها البرن�
 sub:['أي نظام فرعي يناسبكم؟ مثال: المبيعات والذمم المدينة، أو المخزون، أو الرواتب.','کام سیستەمی لاوەکی بۆتان گونجاوە؟ نموونە: فرۆشتن و قەرزی وەرگیراو، کۆگا، یان مووچە.'],
 subwhy:['سبب اختيار هذا النظام الفرعي؛ اربطه بمصدر دخل شركتكم.','هۆکاری هەڵبژاردنی ئەم سیستەمە لاوەکییە؛ بە سەرچاوەی داهاتی کۆمپانیاکەتانەوە ببەستەرەوە.'],
 local:['هل البرنامج متوفر في العراق/كوردستان؟ عبر وكيل أو شريك أو اشتراك سحابي؟','ئایا بەرنامەکە لە عێراق/کوردستان بەردەستە؟ بە وەکیل، هاوبەش، یان بەشداربوونی کلاود؟'],
-members:['أسماء أعضاء مجموعتكم، مفصولة بفاصلة.','ناوی ئەندامانی گروپەکەتان، بە کۆما جیا بکرێنەوە.'],
+members:['اكتب اسم كل عضو في سطر مستقل (اضغط Enter بعد كل اسم).','ناوی هەر ئەندامێک لە دێڕێکی جیادا بنووسە (دوای هەر ناوێک Enter بکە).'],
 lang:['تبديل لغة الواجهة والبوستر بين العربية والكوردية.','گۆڕینی زمانی ڕووکار و بوستەر لە نێوان عەرەبی و کوردی.'],
 info:['شرح فائدة هذا النظام وفائدة النظام المحاسبي المحوسب.','ڕوونکردنەوەی سوودی ئەم سیستەمە و سوودی سیستەمی ژمێریاری کۆمپیوتەرکراو.'],
 save:['يحفظ ما كتبته في هذا المتصفح (ويُحفظ تلقائياً أيضاً).','ئەوەی نووسیوتە لەم وێبگەڕەدا هەڵدەگرێت (خۆکارانەش هەڵدەگیرێت).'],
