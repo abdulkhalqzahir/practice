@@ -69,7 +69,7 @@ td:first-child{border-radius:0 12px 12px 0}td:last-child{border-radius:12px 0 0 
 #tip{position:fixed;z-index:50;max-width:280px;background:var(--wine);color:#fff;padding:9px 13px;border-radius:10px;font-size:13px;line-height:1.7;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 4px 16px #0006;border:1px solid var(--gold)}#tip.on{opacity:1}
 dialog{max-width:540px;width:calc(100% - 28px);border:0;border-radius:16px;background:var(--bar);color:var(--bart);padding:22px;font-family:inherit}dialog::backdrop{background:#0008}dialog h3{margin:14px 0 6px;color:var(--rose)}dialog h3:first-child{margin-top:0}dialog li{margin:7px 0;line-height:1.8}dialog p{line-height:1.8;margin:0}dialog button{margin-top:14px;font:inherit;border:0;background:var(--wine);color:#fff;border-radius:8px;padding:6px 18px;cursor:pointer}
 @media (max-width:620px){.three,.two{grid-template-columns:1fr}.sec{margin-inline:16px}}
-@media print{@page{size:A2 portrait;margin:0}body{background:#fff}.bar,.hint,.fillbar,body::before{display:none}.wrap{padding:0}.poster{width:100%;box-shadow:none;border-radius:0;font-size:1.5vw}
+@media print{@page{size:A2 portrait;margin:0}body{background:#fff}.bar,.hint,.fillbar,#tip,body::before{display:none!important}.wrap{padding:0}.poster{width:100%;box-shadow:none;border-radius:0;font-size:1.5vw}
 .addr{display:none}.f{border-bottom-color:#bbb}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 </head>
@@ -180,7 +180,7 @@ function grp(){
 function hint(){$("#hint").textContent=S.grp?`${t("المجموعة")} ${S.grp} — ${t(G[S.grp-1][1])}: ${t(G[S.grp-1][2])}`:t(DH)}
 $("#addr").onclick=()=>{collect();S.rows++;build();save(false)};
 $("#save").onclick=()=>save(true);
-$("#print").onclick=()=>{save(false);window.print()};
+$("#print").onclick=()=>{save(false);tipOff();document.activeElement&&document.activeElement.blur();window.print()};window.addEventListener("beforeprint",()=>tipOff());
 $("#reset").onclick=()=>{if(confirm(t("سيتم مسح كل ما كتبته. متأكد؟"))){S={rows:2,grp:0,lang:LG,noDemo:true};try{localStorage.removeItem(KEY)}catch(e){}build();grp();$("#hint").textContent=t("تم المسح. اختر مجموعتك للبدء.")}};
 $("#lang").onclick=()=>setLang(LG==="ar"?"ku":"ar");$("#info").onclick=info;$("#dx").onclick=()=>$("#dlg").close();
 KU['مثال المجموعة ٣']='نموونەی گروپی ٣';KU['سيتم استبدال ما كتبته بالمثال. متأكد؟']='ئەوەی نووسیوتە بە نموونەکە دەگۆڕدرێت. دڵنیایت؟';
