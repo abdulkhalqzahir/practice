@@ -5,7 +5,8 @@
 ;  shift_enter_counter.ahk
 ;  - Shift+Enter ی کیبۆرد دەژمێرێت (تەنها لەسەر ماڵپەڕی xawan)
 ;  - هەر Shift+Enter ێک لەگەڵ «جۆری تاسک» تۆمار دەکرێت (ناوی تابەکە)
-;  - Shift+Enter ی کلیکی ڕاست لەلایەن RightClick_ShiftEnter.ahk ەوە دەژمێردرێت
+;  - کلیکی لای ڕاست = Shift+Enter (و دەژمێردرێت، بە هەمان جۆری تاسکەوە). F11 = چالاک/ناچالاک
+;    (پێویست ناکات RightClick_ShiftEnter.ahk بەتەنیا بکرێتەوە، ئەمە جێگەی گرتووەتەوە)
 ;  - دوای 10 کاتژمێر لە یەکەم Shift+Enter، ژمارەی «ئێستا» دەگەڕێتەوە سفر
 ;  - F2 (fn+F2)   = ژمارەی ئێستا + ئەمڕۆ بەپێی جۆر + مێژوو
 ;  - Ctrl+Alt+F1  = ناوی تابی ئێستا زیاد دەکات وەک «جۆری تاسک»
@@ -83,7 +84,7 @@ CountOne() {
     ; ژمارەی ڕۆژانە بەپێی جۆری تاسک (ئەمە دەنێردرێت بۆ ماڵپەڕ)
     key := FormatTime(, "yyyy-MM-dd") "|" task
     IniWrite(Integer(IniRead(IniFile, "Tasks", key, "0")) + 1, IniFile, "Tasks", key)
-    SetTimer(FullSync, -4000)       ; 4 چرکە دوای کۆتایی Shift+Enter، دەنێرێت
+    RequestFast()                   ; ڕاستەوخۆ دەنێردرێت بۆ ماڵپەڕ
 }
 
 ; گواستنەوەی ژمارە کۆنەکان (ئەگەر فایلی کۆن لە تەنیشت سکریپتەکەیە)
@@ -93,6 +94,31 @@ if (!FileExist(IniFile) && FileExist(A_ScriptDir "\shift_enter_count.ini"))
 ; فایلی ini بە UTF-16 دروست دەبێت بۆ ئەوەی ناوی کوردی دروست بمێنێتەوە
 if !FileExist(IniFile)
     FileAppend("[Settings]`n", IniFile, "UTF-16")
+
+; ئەگەر فایلی ini ANSI بێت (وەشانە کۆنەکان)، دەیگۆڕێت بۆ UTF-16 تا ناوی کوردی نەشێوێت
+FixIniEncoding() {
+    try {
+        buf := FileRead(IniFile, "RAW")
+        if (buf.Size = 0 || (buf.Size >= 2 && NumGet(buf, 0, "UShort") = 0xFEFF))
+            return
+        txt := FileRead(IniFile, "CP0")
+        try FileDelete(IniFile ".tmp")
+        FileAppend(txt, IniFile ".tmp", "UTF-16")
+        FileMove(IniFile ".tmp", IniFile, 1)
+    }
+}
+FixIniEncoding()
+
+; سکریپتە کۆنەکەی کلیکی ڕاست (RightClick_ShiftEnter) ئەگەر کراوەیە دایدەخات،
+; چونکە ئەو ژمارەکان بە فۆرماتی کۆن دەژمێرێت و نایگاتە ماڵپەڕ
+DetectHiddenWindows true
+for hwnd in WinGetList("ahk_class AutoHotkey") {
+    if (hwnd != A_ScriptHwnd && InStr(WinGetTitle(hwnd), "RightClick_ShiftEnter"))
+        try WinClose(hwnd)
+}
+DetectHiddenWindows false
+
+global RightClickOn := IniRead(IniFile, "Settings", "RightClick", "1") = "1"
 
 ; ============ ژمارەی کۆنی ڕۆژانە (پێش ئەم وەشانە) ============
 OldDays() {
@@ -226,75 +252,267 @@ RemoveSelf() {
     ExitApp()
 }
 
-; ئەگەر بەڕێوەبەر لە داشبۆرد «سفرکردنەوەی داتا» ی کرد، ژمارەکانی ئێرەش خۆکار سفر دەکرێنەوە
-CheckReset() {
+; ============ تۆڕ: دوو ڕێگا (WinHttp و WinINet) + ناردنی ناسینکرۆن ============
+; WinHttp هەندێک جار بە پڕۆکسی/VPN/فایەروۆڵ ناگات، بەڵام WinINet (وەک وێبگەڕ) دەگات.
+; ئەگەر یەکەم ڕێگا شکستی هێنا، خۆکار ڕێگای دووەم تاقی دەکاتەوە و ئەوەی کاری کرد دەیپارێزێت.
+global UseInet := IniRead(IniFile, "Settings", "UseInet", "0") = "1"
+global Inflight := []
+global NetOK := true
+global LastCheck := 0
+global LastFast := 0
+global BlockUntil := 0      ; ئەگەر Pantry 429 ی دا، تا ئەم کاتە هیچ نانێرین
+global Backoff := 0
+global FastGap := 2000      ; کەمترین ماوە لە نێوان دوو ناردندا (ms). Pantry تەنها 2 داواکاری/چرکە قبوڵ دەکات بۆ هەمووان
+global PantryBase := "https://getpantry.cloud/apiv1/pantry/"
+
+Tip(text, ms := 1500) {
+    ToolTip(text)
+    SetTimer(() => ToolTip(), -ms)
+}
+
+MakeReq(via, ms := 10000) {
+    if (via = "winhttp") {
+        r := ComObject("WinHttp.WinHttpRequest.5.1")
+        r.SetTimeouts(ms, ms, ms, ms * 2)
+        try r.Option[9] := 0x0A80        ; TLS 1.0/1.1/1.2 چالاک دەکات (Windows 7/8 بە بنەڕەت TLS 1.2 ناکات)
+        return r
+    }
+    return ComObject("MSXML2.XMLHTTP.6.0")
+}
+
+SetTransport(toInet) {
+    global UseInet
+    if (UseInet = toInet)
+        return
+    UseInet := toInet
+    IniWrite(toInet ? 1 : 0, IniFile, "Settings", "UseInet")
+}
+
+LogNet(msg) {
+    try FileAppend(FormatTime(, "yyyy-MM-dd HH:mm:ss") "  " msg "`n", IniDir "\net_log.txt", "UTF-8")
+}
+
+; داواکاری ڕاستەوخۆ (چاوەڕێ دەکات). تەنها بۆ پشکنین و داخستن بەکاردێت.
+HttpSync(method, url, body := "", ms := 10000, single := false) {
+    order := UseInet ? ["inet", "winhttp"] : ["winhttp", "inet"]
+    res := {status: 0, text: "", via: "", err: "", ms: 0}
+    for via in order {
+        t0 := A_TickCount
+        try {
+            r := MakeReq(via, ms)
+            r.Open(method, url, false)
+            if (body != "")
+                r.SetRequestHeader("Content-Type", "application/json")
+            else
+                r.SetRequestHeader("Cache-Control", "no-cache")
+            if (body != "")
+                r.Send(body)
+            else
+                r.Send()
+            res.status := r.Status
+            res.text := r.ResponseText
+            res.via := via
+            res.ms := A_TickCount - t0
+            res.err := ""
+            return res
+        } catch as e {
+            res.err .= via " (" (A_TickCount - t0) "ms): " e.Message "`n"
+        }
+        if single
+            break
+    }
+    return res
+}
+
+; داواکاری ناسینکرۆن: هیچ کاتێک سکریپتەکە گیر ناکات
+HttpAsync(method, url, body := "", kind := "put", after := "", tries := 0, forceVia := "") {
+    via := forceVia != "" ? forceVia : (UseInet ? "inet" : "winhttp")
     try {
-        req := ComObject("WinHttp.WinHttpRequest.5.1")
-        req.SetTimeouts(2000, 2000, 3000, 3000)
-        req.Open("GET", "https://getpantry.cloud/apiv1/pantry/" PantryId "/basket/reset", false)
-        req.Send()
-        last := IniRead(IniFile, "Settings", "ResetId", "")
-        ; ئەگەر بەڕێوەبەر ئەم کەسەی سڕیبێتەوە
-        if (req.Status = 200 && PersonName != "" && RegExMatch(req.ResponseText, '\Q"' JName(PersonName) '"\E\s*:\s*(\d+)', &rm)) {
-            if (Integer(rm[1]) > Integer(IniRead(IniFile, "Settings", "RegisteredAt", "0")) * 1000) {
-                RemoveSelf()
-                return
-            }
-        }
-        if (req.Status = 200 && RegExMatch(req.ResponseText, '"id"\s*:\s*(\d+)', &m)) {
-            rid := Integer(m[1])
-            if (last = "")
-                IniWrite(rid, IniFile, "Settings", "ResetId")        ; یەکەمجار: تەنها دەیزانین
-            else if (rid > Integer(last)) {
-                ClearLocal()
-                IniWrite(rid, IniFile, "Settings", "ResetId")
-            }
-        } else if (last = "" && req.Status = 400) {
-            IniWrite(0, IniFile, "Settings", "ResetId")
-        }
+        r := MakeReq(via)
+        r.Open(method, url, true)
+        r.SetRequestHeader("Content-Type", "application/json")
+        if (method = "GET")
+            r.SetRequestHeader("Cache-Control", "no-cache")
+        if (body != "")
+            r.Send(body)
+        else
+            r.Send()
+        Inflight.Push({req: r, via: via, method: method, url: url, body: body, kind: kind, after: after, tries: tries, t: A_TickCount})
+    } catch as e {
+        LogNet("Open/Send failed via " via ": " e.Message)
+        FailedItem({via: via, method: method, url: url, body: body, kind: kind, after: after, tries: tries})
     }
 }
 
-global Reqs := []
-global LastCheck := 0
+; ئەگەر ڕێگایەک شکستی هێنا: ڕێگای دووەم تاقی بکەرەوە
+FailedItem(it) {
+    global NetOK
+    if (it.tries < 1) {
+        other := (it.via = "winhttp") ? "inet" : "winhttp"
+        HttpAsync(it.method, it.url, it.body, it.kind, it.after, it.tries + 1, other)
+        return
+    }
+    if (NetOK) {
+        NetOK := false
+        LogNet("Send failed on both transports: " it.url)
+        ToolTip("ناردن بۆ ماڵپەڕ سەرکەوتوو نەبوو — Ctrl+Alt+F4 بۆ پشکنین")
+        SetTimer(() => ToolTip(), -2500)
+    }
+    if IsObject(it.after)
+        it.after.Call()
+}
+
+PollInflight() {
+    global NetOK, Backoff, BlockUntil
+    i := 1
+    while (i <= Inflight.Length) {
+        it := Inflight[i]
+        done := false, netErr := false, status := 0, text := ""
+        try {
+            if (it.via = "winhttp")
+                done := it.req.WaitForResponse(0.02)
+            else
+                done := (it.req.readyState = 4)
+            if done {
+                status := it.req.Status
+                text := it.req.ResponseText
+            }
+        } catch {
+            done := true
+            netErr := true
+        }
+        if (!done && A_TickCount - it.t > 30000) {
+            done := true
+            netErr := true
+        }
+        if !done {
+            i++
+            continue
+        }
+        Inflight.RemoveAt(i)
+        if (netErr || status = 0) {
+            FailedItem(it)
+            continue
+        }
+        ; گەیشت بە سێرڤەر
+        if (it.via != (UseInet ? "inet" : "winhttp"))
+            SetTransport(it.via = "inet")        ; ئەو ڕێگایەی کاری کرد دەیپارێزین
+        if (!NetOK) {
+            NetOK := true
+            LogNet("Network OK again via " it.via)
+        }
+        if (it.kind = "reset")
+            HandleReset(status, text)
+        else if (status = 429 || status >= 500) {
+            ; Pantry زۆر داواکاری بینیوە: بێدەنگ دەوەستین و دواتر (بە ماوەیەکی هەڕەمەکی) دووبارە دەنێرین
+            Backoff := Backoff ? Min(Backoff * 2, 20000) : 2000
+            wait := Backoff + Random(0, 1500)
+            BlockUntil := A_TickCount + wait
+            SetTimer(FastSend, -wait)
+            LogNet("HTTP " status " - waiting " wait " ms")
+        } else {
+            Backoff := 0
+        }
+        if IsObject(it.after)
+            it.after.Call()
+    }
+}
+
+
+; ئەگەر بەڕێوەبەر لە داشبۆرد «سفرکردنەوەی داتا» ی کرد، ژمارەکانی ئێرەش خۆکار سفر دەکرێنەوە
+CheckResetThen(after) {
+    HttpAsync("GET", PantryBase PantryId "/basket/reset", "", "reset", after)
+}
+
+HandleReset(status, text) {
+    last := IniRead(IniFile, "Settings", "ResetId", "")
+    ; ئەگەر بەڕێوەبەر ئەم کەسەی سڕیبێتەوە
+    if (status = 200 && PersonName != "" && RegExMatch(text, '\Q"' JName(PersonName) '"\E\s*:\s*(\d+)', &rm)) {
+        if (Integer(rm[1]) > Integer(IniRead(IniFile, "Settings", "RegisteredAt", "0")) * 1000) {
+            RemoveSelf()
+            return
+        }
+    }
+    if (status = 200 && RegExMatch(text, '"id"\s*:\s*(\d+)', &m)) {
+        rid := Integer(m[1])
+        if (last = "")
+            IniWrite(rid, IniFile, "Settings", "ResetId")        ; یەکەمجار: تەنها دەیزانین
+        else if (rid > Integer(last)) {
+            ClearLocal()
+            IniWrite(rid, IniFile, "Settings", "ResetId")
+        }
+    } else if (last = "" && status = 400) {
+        IniWrite(0, IniFile, "Settings", "ResetId")
+    }
+}
+
+; ژمارەی ئەمڕۆ + نیشانەی «چالاکم» (بچووک و خێرا)
+BodyToday() {
+    days := BuildDays()
+    td := FormatTime(, "yyyy-MM-dd")
+    js := ""
+    if days.Has(td) {
+        tj := ""
+        for t, n in days[td]
+            tj .= (tj = "" ? "" : ",") '"' t '":' n
+        js := '"' td '":{' tj '}'
+    }
+    return '{"people":{"' JName(PersonName) '":{"seen":' NowEpoch() ',"active":1,"days":{' js '}}}}'
+}
+
+PutBasket(body, kind := "put") {
+    global LastFast
+    if (A_TickCount < BlockUntil) {              ; لە ماوەی چاوەڕوانیدایە؛ FastSend دواتر نوێترین داتا دەنێرێت
+        SetTimer(FastSend, -(BlockUntil - A_TickCount + 300))
+        return
+    }
+    LastFast := A_TickCount
+    HttpAsync("PUT", PantryBase PantryId "/basket/shift", body, kind)
+}
+
+; هەر Shift+Enter ێک: یەکسەر دەنێردرێت. ئەگەر لە 1.5 چرکەی پێشوودا نێردرابێت،
+; لە کۆتایی ئەو ماوەیەدا دەنێردرێت (بۆ ئەوەی Pantry داواکارییەکان بلۆک نەکات)
+RequestFast() {
+    gap := A_TickCount - LastFast
+    if (gap >= FastGap)
+        FastSend()
+    else
+        SetTimer(FastSend, -(FastGap - gap + Random(0, 400)))
+}
+
+FastSend() {
+    if (PersonName = "" || PantryId = "")
+        return
+    PutBasket(BodyToday(), "fast")
+}
 
 ; full = هەموو داتا؛ نەخێر = تەنها نیشانەی «چالاکم» (سووک و خێرا)
 Sync(full := true) {
-    global Reqs, LastCheck
+    global LastCheck
     if (PersonName = "" || PantryId = "")
         return
-    if (full || A_TickCount - LastCheck > 55000) {
+    if (!full && A_TickCount - LastFast < 35000)   ; تازە شتێک نێردراوە، نیشانەی چالاکی پێویست نییە
+        return
+    if (full || A_TickCount - LastCheck > 180000) {
         LastCheck := A_TickCount
-        CheckReset()
-        if (PersonName = "")
-            return
-    }
-    body := full ? BuildBody() : '{"people":{"' JName(PersonName) '":{"seen":' NowEpoch() ',"active":1}}}'
-    try {
-        req := ComObject("WinHttp.WinHttpRequest.5.1")
-        req.SetTimeouts(5000, 5000, 10000, 15000)
-        req.Open("PUT", "https://getpantry.cloud/apiv1/pantry/" PantryId "/basket/shift", true)   ; true = ناسینکرۆن
-        req.SetRequestHeader("Content-Type", "application/json")
-        req.Send(body)
-        Reqs.Push(req)
-        if (Reqs.Length > 6)
-            Reqs.RemoveAt(1)
-    }
+        CheckResetThen((*) => SendSnapshot(full))     ; دوای پشکنینی سفرکردنەوە دەنێردرێت
+    } else
+        SendSnapshot(full)
+}
+
+SendSnapshot(full) {
+    if (PersonName = "" || PantryId = "")        ; لەوانەیە لەم نێوەندەدا لابرابێت
+        return
+    PutBasket(full ? BuildBody() : BodyToday())
 }
 
 FullSync() {
     Sync(true)
 }
 
-; ناردنی ڕاستەوخۆ (بێ چاوەڕوانی) بۆ کاتی داخستن
+; ناردنی ڕاستەوخۆ (بێ چاوەڕوانی زۆر) بۆ کاتی داخستن
 SendNow(body, pid) {
-    try {
-        req := ComObject("WinHttp.WinHttpRequest.5.1")
-        req.SetTimeouts(3000, 3000, 5000, 5000)
-        req.Open("PUT", "https://getpantry.cloud/apiv1/pantry/" pid "/basket/shift", false)
-        req.SetRequestHeader("Content-Type", "application/json")
-        req.Send(body)
-    }
+    try HttpSync("PUT", PantryBase pid "/basket/shift", body, 2500, true)
 }
 
 SendOffline(nm, pid) {
@@ -312,8 +530,13 @@ ExitHandler(reason, code) {
 }
 OnExit(ExitHandler)
 
-SetTimer(Sync, 120000)                          ; هەر 2 خولەک: هەموو داتا
-SetTimer(() => Sync(false), 30000)              ; هەر 30 چرکە: نیشانەی «چالاکم»
+ToolTip("task_counter وەشانی 10 ✔`nکلیکی لای ڕاست = Shift+Enter: " (RightClickOn ? "چالاک ✔" : "ناچالاک ✘  (F11 بۆ چالاککردن)"))
+SetTimer(() => ToolTip(), -4000)
+SetTimer(PollInflight, 150)                     ; ئەنجامی داواکارییە ناسینکرۆنەکان دەپشکنێت
+OnMessage(0x5555, (*) => RequestFast())
+OnMessage(0x5556, (*) => CountOne())          ; RightClick_ShiftEnter.ahk ئەمە دەنێرێت دوای هەر کلیکی لای ڕاست          ; entak.ahk ئەمە دەنێرێت دوای هەر دەبڵ-کلیکێک
+SetTimer(Sync, 300000)                          ; هەر 5 خولەک: هەموو داتا
+SetTimer(() => Sync(false), 45000)              ; هەر 45 چرکە: نیشانەی «چالاکم»
 SetTimer(() => Sync(), -3000)                   ; یەکەم ناردن 3 چرکە دوای کردنەوە
 
 if (PersonName = "" || PantryId = "" || TaskName = "")
@@ -328,18 +551,26 @@ if (PersonName = "" || PantryId = "" || TaskName = "")
         MsgBox("هێشتا تۆمار نەکراویت. Ctrl+Alt+F3 دابگرە.", "پشکنین")
         return
     }
+    ToolTip("دەپشکنرێت... (ڕەنگە تا 30 چرکە بخایەنێت)")
     body := BuildBody()
-    try {
-        req := ComObject("WinHttp.WinHttpRequest.5.1")
-        req.SetTimeouts(8000, 8000, 15000, 20000)
-        req.Open("PUT", "https://getpantry.cloud/apiv1/pantry/" PantryId "/basket/shift", false)
-        req.SetRequestHeader("Content-Type", "application/json")
-        req.Send(body)
-        MsgBox("ئەنجام: " req.Status " " req.StatusText "`n`n" req.ResponseText "`n`nنێردرا:`n" body, "پشکنینی ناردن")
-    } catch as e {
-        MsgBox("هەڵە: " e.Message, "پشکنینی ناردن")
+    r := HttpSync("PUT", PantryBase PantryId "/basket/shift", body, 12000)
+    ToolTip()
+    if (r.via != "") {
+        SetTransport(r.via = "inet")
+        MsgBox("سەرکەوتوو بوو ✔`nڕێگا: " (r.via = "inet" ? "WinINet" : "WinHttp") " (" r.ms " ms)`nئەنجام: " r.status "`n`n" SubStr(r.text, 1, 300) "`n`nنێردرا:`n" SubStr(body, 1, 600), "پشکنینی ناردن")
+        return
     }
+    ; هەردوو ڕێگا شکستیان هێنا: ئینتەرنێت بە گشتی هەیە؟
+    g := HttpSync("GET", "https://www.microsoft.com", "", 6000, true)
+    net := (g.via != "") ? "ئینتەرنێت کاردەکات، بەڵام getpantry.cloud ناگات." : "ئینتەرنێتیش ناگات."
+    MsgBox("نەگەیشت بە getpantry.cloud ✘`n`n" r.err "`n" net "`n`n"
+        . "چارەسەر:`n"
+        . "1) VPN یان DNS ی گشتی (1.1.1.1 یان 8.8.8.8) تاقی بکەرەوە`n"
+        . "2) ئەگەر پڕۆکسی بەکاردێنیت، لە Windows Settings ڕێکی بخە`n"
+        . "3) Firewall/Antivirus ڕێگە بە AutoHotkey بدە`n"
+        . "4) لە وێبگەڕ https://getpantry.cloud بکەرەوە، ئەگەر نەکرایەوە ISP بلۆکی کردووە", "پشکنینی ناردن")
 }
+
 
 ; ---------- سفرکردنەوەی ژمارەکانی ئەم کۆمپیوتەرە ----------
 ^!F5:: {
@@ -347,6 +578,23 @@ if (PersonName = "" || PantryId = "" || TaskName = "")
         return
     ClearLocal()
     MsgBox("ژمارەکانی ئەم کۆمپیوتەرە سفر کرانەوە ✔", "سفرکردنەوە")
+}
+
+; ---------- کلیکی لای ڕاست => Shift+Enter (و دەژمێردرێت) ----------
+#HotIf RightClickOn && !WinActive("ahk_pid " DllCall("GetCurrentProcessId"))
+RButton:: {
+    Send "+{Enter}"
+    CountOne()
+}
+#HotIf
+
+; F11 = کلیکی لای ڕاست وەک Shift+Enter چالاک / ناچالاک بکە
+F11:: {
+    global RightClickOn
+    RightClickOn := !RightClickOn
+    IniWrite(RightClickOn ? 1 : 0, IniFile, "Settings", "RightClick")
+    ToolTip("کلیکی لای ڕاست = Shift+Enter: " (RightClickOn ? "چالاک ✔" : "ناچالاک"))
+    SetTimer(() => ToolTip(), -1500)
 }
 
 ; ---------- Shift+Enter ی کیبۆرد ----------

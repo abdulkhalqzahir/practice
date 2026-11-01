@@ -75,6 +75,7 @@ td.l{text-align:right}
 tbody tr{transition:.12s}
 tbody tr:hover td{background:rgba(239,68,68,.07)}
 tr.td td,tr.sel td{background:var(--acs)}
+tr.live td{background:rgba(52,211,153,.07)}
 tr.sel td:first-child{box-shadow:inset -3px 0 0 var(--ac)}
 tfoot td{font-weight:800;border-top:2px solid var(--ac);border-bottom:0;background:var(--card2)}
 ::-webkit-scrollbar{width:9px;height:9px}
@@ -137,7 +138,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--ac);border-bottom:0;backgrou
   <div class="cards">
     <div class="card"><div class="k">کۆی جارەکانی مانگ</div><div class="v" id="total">0</div></div>
     <div class="card"><div class="k">کۆی نرخی مانگ</div><div class="v" id="money">0</div></div>
-    <div class="card"><div class="k">چالاک / کۆی کەسەکان</div><div class="v" id="act">0/0</div></div>
+    <div class="card"><div class="k">چالاک / کۆی کەسەکان</div><div class="v" id="act">0/0</div><div id="actnames" style="margin-top:6px;font-size:.85rem;color:var(--ok)"></div></div>
   </div>
 
   <div class="card">
@@ -170,13 +171,19 @@ tfoot td{font-weight:800;border-top:2px solid var(--ac);border-bottom:0;backgrou
   </div>
 </div>
 
+<div class="wrap" style="padding-top:0"><div class="card">
+  <h2>ڕەشکراوەکان</h2>
+  <div id="blocked" class="short"></div>
+  <small>ئەو کەسانەی بە 🗑️ سڕاونەتەوە لێرە دەمێننەوە تا سکریپتی ئەوان ئەگەر هێشتا کار بکات، دووبارە نەگەڕێنەوە. بۆ ئەوەی دووبارە ڕێگەیان پێ بدرێت «گەڕاندنەوە» بکە.</small>
+</div></div>
+
 <div class="dlg" id="dlg" hidden><div class="box"><div class="tt" id="dlgt"></div><div class="tx" id="dlgx"></div><div class="f"><button id="dly">بەڵێ</button><button class="ghost" id="dln">نەخێر</button></div></div></div>
 
 <div id="report"></div>
 
 <script>
 var KEY = "se_dashboard_v2";
-var ONLINE = 100;            // چرکە: ئەگەر لەم ماوەیەدا نیشانەی چالاکی نەهات = ناچالاک
+var ONLINE = 300;            // چرکە: ئەگەر لەم ماوەیەدا نیشانەی چالاکی نەهات = ناچالاک
 var OLD = "پێشتر";
 var S = load();
 var sel = "";
@@ -199,9 +206,9 @@ function fmt(n) { return (Math.round(n * 100) / 100).toLocaleString("en-US"); }
 function load() {
   try {
     var r = localStorage.getItem(KEY);
-    if (r) { var o = JSON.parse(r); return { people: o.people || {}, prices: o.prices || {} }; }
+    if (r) { var o = JSON.parse(r); return { people: o.people || {}, prices: o.prices || {}, blocked: o.blocked || {} }; }
   } catch (e) {}
-  return { people: {}, prices: {} };
+  return { people: {}, prices: {}, blocked: {} };
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
@@ -239,6 +246,7 @@ function norm(raw) {
 /* هەرگیز داتا کەم ناکرێتەوە: بۆ هەر ژمارەیەک گەورەترین دەمێنێتەوە */
 function mergePeople(inc) {
   Object.keys(inc).forEach(function (n) {
+    if (S.blocked[n]) return;          /* ڕەشکراوە: نیشان نادرێت */
     var a = S.people[n], b = inc[n];
     if (!a) { S.people[n] = b; return; }
     if (b.seen >= a.seen) { a.seen = b.seen; a.active = b.active; }
@@ -345,6 +353,8 @@ function render() {
   $("total").textContent = fmt(totalC);
   $("money").textContent = fmt(totalM);
   $("act").textContent = onCount + "/" + names.length;
+  var live = names.filter(function (n) { return st[n].on; });
+  $("actnames").textContent = live.length ? "چالاک: " + live.join("، ") : "هیچ کەسێک چالاک نییە";
   var ul = Object.keys(unp);
   $("unpriced").textContent = ul.length ? "نرخی ئەم جۆرانە دانەنراوە: " + ul.join("، ") : "";
 
@@ -373,10 +383,10 @@ function render() {
       var ts = personTasks(n);
       var real = ts.filter(function (t) { return t !== OLD; });
       var tl = (real.length ? real : ts).join("، ");
-      h += '<tr class="' + (sel === n ? "sel" : "") + '"><td><span class="dot' + (s2.on ? " on" : "") + '" style="display:inline-block"></span></td>' +
+      h += '<tr class="' + (sel === n ? "sel" : "") + (s2.on ? " live" : "") + '"><td><span class="dot' + (s2.on ? " on" : "") + '" style="display:inline-block"></span></td>' +
         '<td class="l"><b>' + esc(n) + "</b></td><td>" + esc(tl || "—") + "</td><td>" + (sumObj(s2.today) || "·") + "</td><td><b>" + s2.c +
         "</b></td><td>" + fmt(s2.m) + "</td><td>" +
-        (s2.on ? '<span class="badge on">چالاک</span>' : '<span class="badge">ناچالاک</span><div class="tdy">' + esc(ago(p.seen)) + "</div>") +
+        (s2.on ? '<span class="badge on">چالاک</span>' : '<span class="badge">ناچالاک</span><div class="tdy">' + esc(p.seen ? ago(p.seen) : "نەبینراوە — سکریپتی کۆن؟ task_counter.ahk ی نوێ بدە پێی") + "</div>") +
         '</td><td><button class="ghost sm" data-n="' + esc(n) + '">بینین</button></td><td><button class="ghost sm trash" title="سڕینەوەی کەس" data-del="' + esc(n) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></td></tr>';
     });
     host.innerHTML = h + "</tbody></table>";
@@ -429,7 +439,7 @@ function renderPrices() {
     host.appendChild(row);
   });
 }
-function renderAll() { render(); renderPrices(); }
+function renderAll() { render(); renderPrices(); renderBlocked(); }
 
 /* ---------- مانگ ---------- */
 function setMonth(d) { $("month").value = d.getFullYear() + "-" + pad(d.getMonth() + 1); renderAll(); }
@@ -550,19 +560,23 @@ var DEFAULT_PID = "f65a2d48-0f46-48e3-be2b-e89df90800c6";   // Pantry ID ی تۆ
 try { $("pid").value = (JSON.parse(localStorage.getItem(CFG_KEY)) || {}).p || ""; } catch (e) {}
 if (!$("pid").value) $("pid").value = DEFAULT_PID;
 
-function applyData(j) {
+function applyData(j, loud) {
+  if (j.blocked && typeof j.blocked === "object") {
+    Object.keys(j.blocked).forEach(function (n) { S.blocked[n] = +j.blocked[n] || 1; });
+  }
+  Object.keys(S.blocked).forEach(function (n) { delete S.people[n]; if (sel === n) sel = ""; });
   mergePeople(norm(j.people));
   if (j.prices && typeof j.prices === "object") {
     Object.keys(j.prices).forEach(function (t) { S.prices[t] = +j.prices[t] || 0; });
   }
   save(); renderAll();
-  say("نوێکرایەوە " + new Date().toLocaleTimeString() + " ✔");
+  if (loud) say("نوێکرایەوە " + new Date().toLocaleTimeString() + " ✔");
 }
-function syncSrv() {
+function syncSrv(loud) {
   if (!pid()) { say("Pantry ID بنووسە."); return; }
   try { localStorage.setItem(CFG_KEY, JSON.stringify({ p: pid() })); } catch (e) {}
-  fetch(basketUrl()).then(function (r) {
-    if (r.ok) return r.json().then(applyData);
+  fetch(basketUrl(), { cache: "no-store" }).then(function (r) {
+    if (r.ok) return r.json().then(function (j) { applyData(j, loud); });
     return r.text().then(function (t) {
       if (r.status === 400 && /could not get basket/i.test(t)) {
         return fetch(basketUrl(), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ people: {}, prices: {} }) })
@@ -571,11 +585,12 @@ function syncSrv() {
             else say("نەتوانرا دروست بکرێت. Pantry ID ەکە بپشکنە.");
           });
       }
+      if (r.status === 429) { if (loud) say("Pantry کەمێک بلۆکی کردووە (زۆر داواکاری). دوای چەند چرکەیەک دووبارە هەوڵ بدەرەوە."); return; }
       say("هەڵە: " + r.status + " (ڕەنگە Pantry ID هەڵە بێت یان زۆر داواکاری کرابێت)");
     });
   }).catch(function () { say("نەتوانرا پەیوەندی بکرێت. (داتای پارێزراو پیشان دەدرێت)"); });
 }
-$("srvgo").onclick = syncSrv;
+$("srvgo").onclick = function () { syncSrv(true); };
 
 $("saveprices").onclick = function () {
   var keys = Object.keys(draft);
@@ -611,33 +626,91 @@ $("resetall").onclick = function () {
     ask("دوا بڕیار", "ئەمە ناگەڕێتەوە. داتاکان لە ماڵپەڕ و لە کۆمپیوتەری هەموو کەسەکان دەسڕێنەوە. بسڕدرێنەوە؟", "بەڵێ، بیسڕەوە", doReset);
   });
 };
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+/* fetch ی دووبارەکراو: ئەگەر Pantry ٤٢٩ ی دا (زۆر داواکاری)، چەند چرکەیەک دەوەستێت و دووبارە هەوڵ دەدات */
+function pf(url, opt, tries) {
+  tries = tries || 8;
+  return fetch(url, opt).then(function (r) {
+    if ((r.status === 429 || r.status >= 500) && tries > 1) {
+      return sleep(2000 + Math.random() * 1500).then(function () { return pf(url, opt, tries - 1); });
+    }
+    return r;
+  });
+}
+function stat(t) { $("msg").textContent = t; }
+
 function removePerson(name) {
   if (!pid()) { say("Pantry ID بنووسە."); return; }
   var H = { "Content-Type": "application/json" };
   var ctl = BASE + encodeURIComponent(pid()) + "/basket/reset";
   var mark = {}; mark[name] = Date.now();
   var sig = JSON.stringify({ removed: mark });
-  /* یەکەم: نیشانەی لابردن بۆ سکریپتی ئەو کەسە (PUT ئەگەر هەبێت، ئەگەر نا POST) */
-  fetch(ctl, { method: "PUT", headers: H, body: sig }).then(function (r) {
-    return r.ok ? r : fetch(ctl, { method: "POST", headers: H, body: sig });
-  }).then(function (r) {
-    if (!r.ok) { say("هەڵە لە ناردنی نیشانەی لابردن: " + r.status); return; }
-    return fetch(basketUrl()).then(function (g) {
-      if (!g.ok) { say("نەتوانرا داتا بخوێنرێتەوە (" + g.status + "). هیچ نەسڕایەوە."); return; }
-      return g.json().then(function (j) {
-        if (!j.people) j.people = {};
-        delete j.people[name];
-        return fetch(basketUrl(), { method: "DELETE" }).then(function () {
-          return fetch(basketUrl(), { method: "POST", headers: H, body: JSON.stringify(j) });
-        }).then(function (p) {
-          if (!p.ok) { say("هەڵە: " + p.status); return; }
-          delete S.people[name]; if (sel === name) sel = "";
-          save(); renderAll();
-          say("«" + name + "» سڕایەوە ✔");
-        });
+  var NC = { cache: "no-store" };
+
+  /* یەکسەر لەم وێبگەڕەدا دەشاردرێتەوە، ئینجا لە Pantry ش دەسڕدرێتەوە */
+  S.blocked[name] = Date.now(); delete S.people[name]; if (sel === name) sel = "";
+  save(); renderAll();
+  stat("١/٤ ناردنی نیشانەی لابردن بۆ سکریپتی «" + name + "»...");
+
+  /* نیشانەی لابردن: ئەگەر نەچوو، بەردەوام دەبین (پێویست نییە بۆ سڕینەوەکە) */
+  pf(ctl, { method: "PUT", headers: H, body: sig }).then(function (r) {
+    return r.ok ? r : sleep(900).then(function () { return pf(ctl, { method: "POST", headers: H, body: sig }); });
+  }).catch(function () {}).then(function () {
+    stat("٢/٤ خوێندنەوەی داتا...");
+    return sleep(900).then(function () { return pf(basketUrl(), NC); });
+  }).then(function (g) {
+    if (!g.ok) throw new Error("خوێندنەوە " + g.status);
+    return g.json();
+  }).then(function (j) {
+    if (!j.people) j.people = {};
+    delete j.people[name];
+    if (!j.blocked || typeof j.blocked !== "object") j.blocked = {};
+    j.blocked[name] = Date.now();
+    window._lastBackup = j;                    /* ئەگەر شتێک شکستی هێنا، داتا لێرە دەمێنێتەوە */
+    stat("٣/٤ سڕینەوەی کۆنەکە...");
+    return sleep(900).then(function () { return pf(basketUrl(), { method: "DELETE" }); }).then(function (d) {
+      if (!d.ok && d.status !== 400) throw new Error("سڕینەوە " + d.status);
+      stat("٤/٤ پاشەکەوتکردنی داتای نوێ...");
+      return sleep(900).then(function () { return pf(basketUrl(), { method: "POST", headers: H, body: JSON.stringify(j) }, 15); });
+    });
+  }).then(function (p) {
+    if (!p.ok) throw new Error("پاشەکەوتکردن " + p.status + " — داتا لە بیرگەی ئەم لاپەڕەدایە، لاپەڕەکە دامەخە و دووبارە هەوڵ بدەرەوە");
+    window._lastBackup = null;
+    say("«" + name + "» لە Pantry سڕایەوە و ڕەشکرا ✔");
+  }).catch(function (e) {
+    say("نەتوانرا بە تەواوی بسڕدرێتەوە: " + (e && e.message ? e.message : "پەیوەندی نییە") + ". لە ئەم وێبگەڕەدا شاراوەیە، بەڵام لە Pantry نەسڕاوەتەوە. سکریپتی ئەو کەسە دابخە و دووبارە هەوڵ بدەرەوە.");
+  });
+}
+
+function unblock(name) {
+  if (!pid()) { say("Pantry ID بنووسە."); return; }
+  var H = { "Content-Type": "application/json" };
+  fetch(basketUrl(), { cache: "no-store" }).then(function (g) {
+    if (!g.ok) { say("نەتوانرا داتا بخوێنرێتەوە (" + g.status + ")."); return; }
+    return g.json().then(function (j) {
+      if (j.blocked) delete j.blocked[name];
+      return fetch(basketUrl(), { method: "DELETE" }).then(function () {
+        return fetch(basketUrl(), { method: "POST", headers: H, body: JSON.stringify(j) });
+      }).then(function (p) {
+        if (!p.ok) { say("هەڵە: " + p.status); return; }
+        delete S.blocked[name]; save(); renderAll();
+        say("«" + name + "» گەڕایەوە. ئەگەر سکریپتەکەی کار بکات دووبارە دەردەکەوێت ✔");
       });
     });
   }).catch(function () { say("نەتوانرا پەیوەندی بکرێت."); });
+}
+function renderBlocked() {
+  var h = $("blocked"), names = Object.keys(S.blocked);
+  h.innerHTML = "";
+  if (!names.length) { h.textContent = "هیچ کەسێک ڕەش نەکراوە."; return; }
+  names.forEach(function (n) {
+    var row = el("div", "f");
+    row.appendChild(el("span", "", n));
+    var b = el("button", "ghost sm", "گەڕاندنەوە");
+    b.onclick = function () { unblock(n); };
+    row.appendChild(b);
+    h.appendChild(row);
+  });
 }
 
 function doReset() {
@@ -650,7 +723,7 @@ function doReset() {
     if (!r.ok) { say("هەڵە لە ناردنی نیشانەی سفرکردنەوە: " + r.status); return; }
     return fetch(basketUrl(), { method: "DELETE" }).then(function (r1) {
       if (!r1.ok && r1.status !== 400) { say("هەڵە لە سڕینەوە: " + r1.status); return; }
-      return fetch(basketUrl(), { method: "POST", headers: H, body: JSON.stringify({ people: {}, prices: keep }) }).then(function (r2) {
+      return fetch(basketUrl(), { method: "POST", headers: H, body: JSON.stringify({ people: {}, prices: keep, blocked: S.blocked }) }).then(function (r2) {
         if (!r2.ok) { say("هەڵە لە دروستکردنەوە: " + r2.status); return; }
         S.people = {}; save(); renderAll();
         say("داتا سڕایەوە ✔ لە ماوەی ٢ خولەکدا لای هەموو کەسێک سفر دەبێتەوە (نرخەکان مانەوە)");
@@ -680,7 +753,13 @@ $("copycode").onclick = function () {
 };
 
 setMonth(new Date());
-if (pid()) { syncSrv(); setInterval(syncSrv, 20000); }
+if (pid()) {
+  var lastPoll = 0;
+  function poll() { if (document.hidden || Date.now() - lastPoll < 2000) return; lastPoll = Date.now(); syncSrv(); }
+  poll(); setInterval(poll, 4000);       /* Pantry تەنها 2 داواکاری/چرکە قبوڵ دەکات بۆ هەموو بەکارهێنەران */
+  document.addEventListener("visibilitychange", poll);
+  window.addEventListener("focus", poll);
+}
 setInterval(render, 10000);   // بۆ نوێکردنەوەی دۆخی چالاک/ناچالاک
 </script>
 </body>
