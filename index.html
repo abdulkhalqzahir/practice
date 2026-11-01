@@ -54,6 +54,8 @@ small{color:var(--mut)}
 .badge{display:inline-block;font-size:.74rem;border-radius:99px;padding:1px 10px;background:#262633;color:var(--mut)}
 .badge.on{background:rgba(52,211,153,.14);color:var(--ok)}
 .tdy{color:var(--mut);font-size:.75rem}
+.tk{display:inline-flex;gap:4px;align-items:center;margin:2px 3px}
+.tk button{padding:0 6px;min-height:0;line-height:1.4}
 
 .pr{display:grid;grid-template-columns:1fr 120px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd)}
 .pr:last-child{border-bottom:0}
@@ -129,7 +131,9 @@ tfoot td{font-weight:800;border-top:2px solid var(--ac);border-bottom:0;backgrou
       <input id="pid" placeholder="Pantry ID ی خۆت لێرە دابنێ" style="flex:3;direction:ltr">
       <button id="srvgo">نوێکردنەوە</button>
       <button id="copycode" class="ghost">کۆپی کۆدی وێب</button>
+      <button id="openpantry" class="ghost">کردنەوەی Pantry (بۆ سڕینەوە لەوێ)</button>
       <button id="resetall" class="ghost">سفرکردنەوەی داتا</button>
+      <button id="cleanall" class="ghost">پاککردنەوەی گشتی</button>
     </div>
     <small>ئەم Pantry ID ەیە <b>کۆدی وێب</b>ەکەت. بیدە بە هەر کەسێک، لە کاتی تۆمارکردندا لە فایلەکەدا دایدەنێت و ناوی خۆی دەنووسێت. ماڵپەڕەکە هەر ١ خولەک جارێک خۆکار نوێ دەبێتەوە. نهێنی بهێڵەرەوە.</small>
     <div class="msg" id="msg"></div>
@@ -174,7 +178,8 @@ tfoot td{font-weight:800;border-top:2px solid var(--ac);border-bottom:0;backgrou
 <div class="wrap" style="padding-top:0"><div class="card">
   <h2>ڕەشکراوەکان</h2>
   <div id="blocked" class="short"></div>
-  <small>ئەو کەسانەی بە 🗑️ سڕاونەتەوە لێرە دەمێننەوە تا سکریپتی ئەوان ئەگەر هێشتا کار بکات، دووبارە نەگەڕێنەوە. بۆ ئەوەی دووبارە ڕێگەیان پێ بدرێت «گەڕاندنەوە» بکە.</small>
+  <div class="f" style="margin:8px 0"><button class="ghost sm" id="openpantry2">کردنەوەی Pantry بۆ سڕینەوەی دەستی ↗</button></div>
+  <small>ئەو کەسانەی بە 🗑️ سڕاونەتەوە لێرە دەمێننەوە تا سکریپتی کۆنی ئەوان دووبارە نەگەڕێتەوە. ئەگەر کەسێک دووبارە تۆمار بێتەوە (task_counter.ahk ی نوێ، fn+F3 یان کردنەوەی سکریپت)، خۆکار دەگەڕێتەوە. «گەڕاندنەوە» ڕێگەی پێ دەدات. «سڕینەوەی یەکجاری» وا دەکات سکریپتەکەی لەسەر کۆمپیوتەرەکەی ناو و تاسک و کۆد لەبیر بکات و خۆی دووبارە تۆمار ببێتەوە.</small>
 </div></div>
 
 <div class="dlg" id="dlg" hidden><div class="box"><div class="tt" id="dlgt"></div><div class="tx" id="dlgx"></div><div class="f"><button id="dly">بەڵێ</button><button class="ghost" id="dln">نەخێر</button></div></div></div>
@@ -183,9 +188,22 @@ tfoot td{font-weight:800;border-top:2px solid var(--ac);border-bottom:0;backgrou
 
 <script>
 var KEY = "se_dashboard_v2";
-var ONLINE = 300;            // چرکە: ئەگەر لەم ماوەیەدا نیشانەی چالاکی نەهات = ناچالاک
+var ONLINE = 120;            // چرکە: ئەگەر لەم ماوەیەدا نیشانەی چالاکی نەهات = ناچالاک
 var OLD = "پێشتر";
 var S = load();
+S.bans = {};   /* ناوی کەس -> ناسنامەی تۆمارکردنی ڕەشکراو (rid). کاتی کۆمپیوتەر بەکارنایەت */
+var pendingBlock = {}, pendingUnblock = {}, pendingPurge = {}, pendingBan = {}, pendingCutoff = 0;   /* گۆڕانکارییەکانی ئەم لاپەڕەیە تا Pantry پشتڕاستیان دەکاتەوە */
+function isBlocked(n, rec) {
+  if (rec && rec.gone) return true;      /* ناوەکە گۆڕدراوە (هەمان کۆمپیوتەر ناوێکی نوێی بەکارهێنا) */
+  /* پاککردنەوەی گشتی: تەنها ئەو کەسانە دەمێننەوە کە دوای پاککردنەوەکە دووبارە تۆمار بوونەتەوە */
+  if (S.cutoff && !(rec && rec.cut >= S.cutoff)) return true;
+  var t = Math.max(S.blocked[n] || 0, S.purged[n] || 0);
+  /* ناسنامەی تۆمارکردن (rid): ئەگەر هەردوولا هەیانە، تەنها هەمان تۆمارکردن ڕەش دەکرێت. تۆمارکردنەوە = rid ی نوێ = دەگەڕێتەوە. کاتی کۆمپیوتەر گرنگ نییە */
+  var br = S.bans[n];
+  if (t && br && rec && rec.rid) return rec.rid === br;   /* هەردوو جۆری سڕینەوە وەک یەک کار دەکەن: تەنها دووبارە تۆمارکردن دەیانگەڕێنێتەوە */
+  /* ئەگەر کەسەکە دوای ڕەشکردنەکە دووبارە تۆمار بووبێتەوە (reg نوێتر)، ڕێگەی پێ دەدرێت */
+  return !!t && !(rec && rec.reg && rec.reg * 1000 > t);
+}
 var sel = "";
 var draft = {};
 var $ = function (id) { return document.getElementById(id); };
@@ -206,9 +224,9 @@ function fmt(n) { return (Math.round(n * 100) / 100).toLocaleString("en-US"); }
 function load() {
   try {
     var r = localStorage.getItem(KEY);
-    if (r) { var o = JSON.parse(r); return { people: o.people || {}, prices: o.prices || {}, blocked: o.blocked || {} }; }
+    if (r) { var o = JSON.parse(r); return { people: {}, purged: {}, prices: o.prices || {}, blocked: o.blocked || {}, cutoff: +o.cutoff || 0, renames: o.renames || {} }; }
   } catch (e) {}
-  return { people: {}, prices: {}, blocked: {} };
+  return { people: {}, purged: {}, prices: {}, blocked: {}, cutoff: 0, renames: {} };
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
@@ -223,7 +241,7 @@ function norm(raw) {
   var out = {};
   Object.keys(raw || {}).forEach(function (name) {
     var p = raw[name] || {};
-    var o = { seen: +p.seen || 0, active: (+p.active ? 1 : 0), days: {} };
+    var o = { seen: +p.seen || 0, reg: +p.reg || 0, cut: +p.cut || 0, gone: +p.gone || 0, rid: (typeof p.rid === "string" ? p.rid : ""), rz: +p.rz || 0, active: (+p.active ? 1 : 0), days: {} };
     if (p.days && typeof p.days === "object") {
       Object.keys(p.days).forEach(function (d) {
         var tk = p.days[d];
@@ -243,13 +261,28 @@ function norm(raw) {
   });
   return out;
 }
+/* جۆری تاسکی f دەگوازێتەوە بۆ t. sum: کۆکردن، max: گەورەترین (بۆ داتای ئاگادارکراوە) */
+function moveTask(days, f, t, mode) {
+  Object.keys(days).forEach(function (d) {
+    var o = days[d];
+    if (o[f] === undefined) return;
+    o[t] = mode === "sum" ? (o[t] || 0) + o[f] : Math.max(o[t] || 0, o[f]);
+    delete o[f];
+  });
+}
 /* هەرگیز داتا کەم ناکرێتەوە: بۆ هەر ژمارەیەک گەورەترین دەمێنێتەوە */
 function mergePeople(inc) {
   Object.keys(inc).forEach(function (n) {
-    if (S.blocked[n]) return;          /* ڕەشکراوە: نیشان نادرێت */
     var a = S.people[n], b = inc[n];
+    if (isBlocked(n, b)) { if (b.gone) delete S.people[n]; return; }   /* ڕەشکراوە یان ناوی گۆڕدراوە: نیشان نادرێت */
     if (!a) { S.people[n] = b; return; }
     if (b.seen >= a.seen) { a.seen = b.seen; a.active = b.active; }
+    a.reg = Math.max(a.reg || 0, b.reg || 0);
+    if (b.rid) a.rid = b.rid;
+    if ((b.rz || 0) > (a.rz || 0)) {      /* خۆی سفری کردەوە (fn+F5): ژمارەکان دەگۆڕدرێن بە ژمارەی نوێ، نەک گەورەترین */
+      a.rz = b.rz; a.days = b.days; a.seen = b.seen; a.active = b.active; return;
+    }
+    a.cut = Math.max(a.cut || 0, b.cut || 0);
     Object.keys(b.days).forEach(function (d) {
       if (!a.days[d]) a.days[d] = {};
       Object.keys(b.days[d]).forEach(function (t) {
@@ -287,6 +320,12 @@ function allTasks() {
   });
   return Object.keys(set);
 }
+function taskCell(n, list) {
+  if (!list.length) return "—";
+  return list.map(function (t) {
+    return '<span class="tk">' + esc(t) + ' <button class="ghost sm" title="گۆڕینی ناوی تاسک" data-rn="' + esc(n) + '" data-tk="' + esc(t) + '">✎</button></span>';
+  }).join(" ");
+}
 function personTasks(n) {
   var set = {}, D = S.people[n].days;
   Object.keys(D).forEach(function (d) { Object.keys(D[d]).forEach(function (t) { set[t] = 1; }); });
@@ -299,7 +338,22 @@ function ago(sec) {
   if (d < 86400) return Math.round(d / 3600) + " کاتژمێر لەمەوپێش";
   return Math.round(d / 86400) + " ڕۆژ لەمەوپێش";
 }
-function isOn(p) { return !!p.active && (Date.now() / 1000 - p.seen) < ONLINE; }
+/* چالاکی بەپێی کاتی ئەم ماڵپەڕە دەپێورێت (کاتێک آخرین نیشانە گۆڕا)، نەک کاتی کۆمپیوتەری کەسەکە */
+function isOn(p) {
+  if (!p.active) return false;
+  if (p._at) return (Date.now() - p._at) / 1000 < ONLINE;
+  return (Date.now() / 1000 - p.seen) < ONLINE;
+}
+function trackSeen() {
+  Object.keys(S.people).forEach(function (n) {
+    var p = S.people[n];
+    if (p._seen !== p.seen) {
+      var first = (p._seen === undefined);
+      p._at = first ? Date.now() - Math.max(0, Date.now() / 1000 - p.seen) * 1000 : Date.now();
+      p._seen = p.seen;
+    }
+  });
+}
 
 /* ---------- خشتە ---------- */
 function gridHtml(cols, rows, tot) {
@@ -384,7 +438,7 @@ function render() {
       var real = ts.filter(function (t) { return t !== OLD; });
       var tl = (real.length ? real : ts).join("، ");
       h += '<tr class="' + (sel === n ? "sel" : "") + (s2.on ? " live" : "") + '"><td><span class="dot' + (s2.on ? " on" : "") + '" style="display:inline-block"></span></td>' +
-        '<td class="l"><b>' + esc(n) + "</b></td><td>" + esc(tl || "—") + "</td><td>" + (sumObj(s2.today) || "·") + "</td><td><b>" + s2.c +
+        '<td class="l"><b>' + esc(n) + "</b></td><td>" + taskCell(n, real.length ? real : ts) + "</td><td>" + (sumObj(s2.today) || "·") + "</td><td><b>" + s2.c +
         "</b></td><td>" + fmt(s2.m) + "</td><td>" +
         (s2.on ? '<span class="badge on">چالاک</span>' : '<span class="badge">ناچالاک</span><div class="tdy">' + esc(p.seen ? ago(p.seen) : "نەبینراوە — سکریپتی کۆن؟ task_counter.ahk ی نوێ بدە پێی") + "</div>") +
         '</td><td><button class="ghost sm" data-n="' + esc(n) + '">بینین</button></td><td><button class="ghost sm trash" title="سڕینەوەی کەس" data-del="' + esc(n) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button></td></tr>';
@@ -456,6 +510,8 @@ $("q").oninput = render;
 $("flt").onchange = render;
 $("srt").onchange = render;
 $("plist").onclick = function (e) {
+  var rnb = e.target.closest ? e.target.closest("button[data-rn]") : null;
+  if (rnb) { renameTask(rnb.getAttribute("data-rn"), rnb.getAttribute("data-tk")); return; }
   var dl = e.target.closest ? e.target.closest("button[data-del]") : null;
   if (dl) {
     var nm = dl.getAttribute("data-del");
@@ -561,11 +617,46 @@ try { $("pid").value = (JSON.parse(localStorage.getItem(CFG_KEY)) || {}).p || ""
 if (!$("pid").value) $("pid").value = DEFAULT_PID;
 
 function applyData(j, loud) {
+  /* لیستی ڕەشکراوەکان لە Pantry ەوە دێت (ئەوە سەرچاوەی ڕاستەقینەیە)، تەنها گۆڕانکارییە هێشتا نەگەیشتووەکانی ئەم لاپەڕەیە نەبێت */
+  var nb = {};
   if (j.blocked && typeof j.blocked === "object") {
-    Object.keys(j.blocked).forEach(function (n) { S.blocked[n] = +j.blocked[n] || 1; });
+    Object.keys(j.blocked).forEach(function (n) { nb[n] = +j.blocked[n] || 1; });
   }
-  Object.keys(S.blocked).forEach(function (n) { delete S.people[n]; if (sel === n) sel = ""; });
-  mergePeople(norm(j.people));
+  Object.keys(pendingBlock).forEach(function (n) { nb[n] = pendingBlock[n]; });
+  Object.keys(pendingUnblock).forEach(function (n) { delete nb[n]; });
+  S.blocked = nb;
+  S.cutoff = Math.max(+j.cutoff || 0, pendingCutoff);
+  var np = {};
+  if (j.purged && typeof j.purged === "object") Object.keys(j.purged).forEach(function (n) { np[n] = +j.purged[n] || 1; });
+  Object.keys(pendingPurge).forEach(function (n) { np[n] = pendingPurge[n]; });
+  Object.keys(pendingUnblock).forEach(function (n) { delete np[n]; });
+  S.purged = np;
+  var nbn = {};
+  if (j.bans && typeof j.bans === "object") Object.keys(j.bans).forEach(function (n) { if (typeof j.bans[n] === "string") nbn[n] = j.bans[n]; });
+  Object.keys(pendingBan).forEach(function (n) { nbn[n] = pendingBan[n]; });
+  Object.keys(pendingUnblock).forEach(function (n) { delete nbn[n]; });
+  S.bans = nbn;
+  Object.keys(S.blocked).forEach(function (n) {
+    if (isBlocked(n, S.people[n])) { delete S.people[n]; if (sel === n) sel = ""; }
+  });
+  var rn = (j.renames && typeof j.renames === "object") ? j.renames : {};
+  Object.keys(rn).forEach(function (ts) {
+    if (S.renames[ts]) return;
+    var r = rn[ts];
+    S.renames[ts] = r;
+    if (r && S.people[r.p]) moveTask(S.people[r.p].days, r.f, r.t, "sum");
+  });
+  var incP = norm(j.people);
+  Object.keys(S.renames).sort(function (a, b) { return a - b; }).forEach(function (ts) {
+    var r = S.renames[ts];
+    if (r && incP[r.p]) moveTask(incP[r.p].days, r.f, r.t, "max");   /* سکریپتی کۆن ئەگەر ناوی کۆن بنێرێت، ناوی نوێی بۆ دادەنرێت */
+  });
+  /* Pantry سەرچاوەی ڕاستەقینەیە: هەر کەسێک لەوێ نەمابێت لێرەش نامێنێت (ڕێگری لە گەڕانەوەی کەسە سڕاوەکان لە تابی کۆن یان ئامێری تر) */
+  Object.keys(S.people).forEach(function (n) {
+    if (!incP[n]) { delete S.people[n]; if (sel === n) sel = ""; }
+  });
+  mergePeople(incP);
+  trackSeen();
   if (j.prices && typeof j.prices === "object") {
     Object.keys(j.prices).forEach(function (t) { S.prices[t] = +j.prices[t] || 0; });
   }
@@ -620,6 +711,12 @@ function ask(title, text, yesLabel, onYes) {
   $("dly").onclick = function () { $("dlg").hidden = true; onYes(); };
   $("dln").onclick = function () { $("dlg").hidden = true; };
 }
+$("cleanall").onclick = function () {
+  if (!pid()) { say("Pantry ID بنووسە."); return; }
+  ask("پاککردنەوەی گشتی؟", "هەموو کەسەکان و ژمارەکانیان و لیستی ڕەشکراوەکان لەم ماڵپەڕە دەسڕێنەوە (نرخەکان دەمێنن). هەر کەسێک دەبێت ناو و تاسک و کۆد دووبارە بنووسێتەوە.", "بەڵێ", function () {
+    ask("دوا بڕیار", "ئەمە ناگەڕێتەوە. بەردەوام بم؟", "بەڵێ، پاک بکەرەوە", cleanAll);
+  });
+};
 $("resetall").onclick = function () {
   if (!pid()) { say("Pantry ID بنووسە."); return; }
   ask("دڵنیایت لە سڕینەوەی داتاکان؟", "هەموو ژمارەکانی هەموو کەسەکان سفر دەکرێنەوە.", "بەڵێ", function () {
@@ -644,11 +741,17 @@ function removePerson(name) {
   var H = { "Content-Type": "application/json" };
   var ctl = BASE + encodeURIComponent(pid()) + "/basket/reset";
   var mark = {}; mark[name] = Date.now();
-  var sig = JSON.stringify({ removed: mark });
+  var myRid = (S.people[name] && S.people[name].rid) || "";
+  var sigObj = { removed: mark };
+  if (myRid) { sigObj.removedRid = {}; sigObj.removedRid[name] = myRid; }
+  var sig = JSON.stringify(sigObj);
   var NC = { cache: "no-store" };
+  if (myRid) { pendingBan[name] = myRid; S.bans[name] = myRid; }
 
   /* یەکسەر لەم وێبگەڕەدا دەشاردرێتەوە، ئینجا لە Pantry ش دەسڕدرێتەوە */
-  S.blocked[name] = Date.now(); delete S.people[name]; if (sel === name) sel = "";
+  var bts = Date.now();
+  pendingBlock[name] = bts; delete pendingUnblock[name];
+  S.blocked[name] = bts; delete S.people[name]; if (sel === name) sel = "";
   save(); renderAll();
   stat("١/٤ ناردنی نیشانەی لابردن بۆ سکریپتی «" + name + "»...");
 
@@ -665,7 +768,8 @@ function removePerson(name) {
     if (!j.people) j.people = {};
     delete j.people[name];
     if (!j.blocked || typeof j.blocked !== "object") j.blocked = {};
-    j.blocked[name] = Date.now();
+    j.blocked[name] = bts;
+    if (myRid) { if (!j.bans || typeof j.bans !== "object") j.bans = {}; j.bans[name] = myRid; }
     window._lastBackup = j;                    /* ئەگەر شتێک شکستی هێنا، داتا لێرە دەمێنێتەوە */
     stat("٣/٤ سڕینەوەی کۆنەکە...");
     return sleep(900).then(function () { return pf(basketUrl(), { method: "DELETE" }); }).then(function (d) {
@@ -676,40 +780,200 @@ function removePerson(name) {
   }).then(function (p) {
     if (!p.ok) throw new Error("پاشەکەوتکردن " + p.status + " — داتا لە بیرگەی ئەم لاپەڕەدایە، لاپەڕەکە دامەخە و دووبارە هەوڵ بدەرەوە");
     window._lastBackup = null;
+    delete pendingBlock[name]; delete pendingBan[name];
     say("«" + name + "» لە Pantry سڕایەوە و ڕەشکرا ✔");
   }).catch(function (e) {
     say("نەتوانرا بە تەواوی بسڕدرێتەوە: " + (e && e.message ? e.message : "پەیوەندی نییە") + ". لە ئەم وێبگەڕەدا شاراوەیە، بەڵام لە Pantry نەسڕاوەتەوە. سکریپتی ئەو کەسە دابخە و دووبارە هەوڵ بدەرەوە.");
   });
 }
 
-function unblock(name) {
+function cleanTaskName(s) { return String(s || "").replace(/[=|"\\\[\]\r\n]/g, "").trim().slice(0, 40); }
+function renameTask(who, from) {
+  if (!pid()) { say("Pantry ID بنووسە."); return; }
+  var to = window.prompt("ناوی نوێی تاسک بۆ «" + who + "» (ئێستا: " + from + ")\nئەگەر ناوێکی هەبوو کە پێشتر هەیە، ژمارەکان تێکەڵ دەکرێن.", from);
+  if (to === null) return;
+  to = cleanTaskName(to);
+  if (!to || to === from) return;
+  var ts = Date.now(), rec = { p: who, f: from, t: to };
+  var H = { "Content-Type": "application/json" };
+  var ctl = BASE + encodeURIComponent(pid()) + "/basket/reset";
+  var mk = { renamed: {} }; mk.renamed[ts] = rec;
+  S.renames[ts] = rec;
+  if (S.people[who]) moveTask(S.people[who].days, from, to, "sum");
+  save(); renderAll();
+  stat("١/٤ خوێندنەوەی داتا...");
+  pf(basketUrl(), { cache: "no-store" }).then(function (g) {
+    if (!g.ok) throw new Error("خوێندنەوە " + g.status);
+    return g.json();
+  }).then(function (j) {
+    if (j.people && j.people[who] && j.people[who].days) moveTask(j.people[who].days, from, to, "sum");
+    if (!j.renames || typeof j.renames !== "object") j.renames = {};
+    j.renames[ts] = rec;
+    var ks = Object.keys(j.renames).sort(function (a, b) { return a - b; });
+    while (ks.length > 150) delete j.renames[ks.shift()];
+    window._lastBackup = j;
+    stat("٢/٤ سڕینەوەی کۆنەکە...");
+    return sleep(900).then(function () { return pf(basketUrl(), { method: "DELETE" }); }).then(function (d) {
+      if (!d.ok && d.status !== 400) throw new Error("سڕینەوە " + d.status);
+      stat("٣/٤ پاشەکەوتکردن...");
+      return sleep(900).then(function () { return pf(basketUrl(), { method: "POST", headers: H, body: JSON.stringify(j) }, 15); });
+    });
+  }).then(function (p) {
+    if (!p.ok) throw new Error("پاشەکەوتکردن " + p.status + " — داتا لە بیرگەی ئەم لاپەڕەدایە، لاپەڕەکە دامەخە و دووبارە هەوڵ بدەرەوە");
+    window._lastBackup = null;
+    stat("٤/٤ ئاگادارکردنەوەی سکریپتی «" + who + "»...");
+    return sleep(900).then(function () { return pf(ctl, { method: "PUT", headers: H, body: JSON.stringify(mk) }); }).then(function (r) {
+      return r.ok ? r : sleep(900).then(function () { return pf(ctl, { method: "POST", headers: H, body: JSON.stringify(mk) }); });
+    });
+  }).then(function () {
+    say("تاسکی «" + who + "»: " + from + " ← " + to + " ✔ (نرخی «" + to + "» لە بەشی نرخەکان دابنێ ئەگەر نییە)");
+  }).catch(function (e) {
+    say("نەتوانرا بە تەواوی بگۆڕدرێت: " + (e && e.message ? e.message : "پەیوەندی نییە") + ". لە ئەم وێبگەڕەدا گۆڕدراوە، بەڵام Pantry نوێ نەبووەتەوە.");
+  });
+}
+
+/* سڕینەوەی یەکجاری: لە لیستی ڕەشکراوەکان دەرەچێت، و سکریپتی ئەو کەسە لەسەر کۆمپیوتەرەکەی ناو و تاسک و کۆد لەبیر دەکات */
+function purgeForever(name) {
   if (!pid()) { say("Pantry ID بنووسە."); return; }
   var H = { "Content-Type": "application/json" };
-  fetch(basketUrl(), { cache: "no-store" }).then(function (g) {
-    if (!g.ok) { say("نەتوانرا داتا بخوێنرێتەوە (" + g.status + ")."); return; }
-    return g.json().then(function (j) {
-      if (j.blocked) delete j.blocked[name];
-      return fetch(basketUrl(), { method: "DELETE" }).then(function () {
-        return fetch(basketUrl(), { method: "POST", headers: H, body: JSON.stringify(j) });
-      }).then(function (p) {
-        if (!p.ok) { say("هەڵە: " + p.status); return; }
-        delete S.blocked[name]; save(); renderAll();
-        say("«" + name + "» گەڕایەوە. ئەگەر سکریپتەکەی کار بکات دووبارە دەردەکەوێت ✔");
-      });
+  var ctl = BASE + encodeURIComponent(pid()) + "/basket/reset";
+  var mk = { removed: {} }; mk.removed[name] = Date.now();
+  var pRid = S.bans[name] || "";
+  if (pRid) { mk.removedRid = {}; mk.removedRid[name] = pRid; }
+  var mkb = JSON.stringify(mk);
+  var pts = Date.now();
+  pendingPurge[name] = pts; delete pendingBlock[name]; delete pendingUnblock[name];
+  S.purged[name] = pts; delete S.blocked[name]; delete S.people[name];
+  if (sel === name) sel = "";
+  save(); renderAll();
+  stat("١/٤ ناردنی نیشانە بۆ سکریپتی «" + name + "»...");
+  pf(ctl, { method: "PUT", headers: H, body: mkb }).then(function (r) {
+    return r.ok ? r : sleep(900).then(function () { return pf(ctl, { method: "POST", headers: H, body: mkb }); });
+  }).then(function (r) {
+    if (!r.ok) throw new Error("نیشانە " + r.status);
+    stat("٢/٤ خوێندنەوەی داتا...");
+    return sleep(900).then(function () { return pf(basketUrl(), { cache: "no-store" }); });
+  }).then(function (g) {
+    if (!g.ok) throw new Error("خوێندنەوە " + g.status);
+    return g.json();
+  }).then(function (j) {
+    if (j.people) delete j.people[name];
+    if (j.blocked) delete j.blocked[name];
+    if (!j.purged || typeof j.purged !== "object") j.purged = {};
+    if (pRid) { if (!j.bans || typeof j.bans !== "object") j.bans = {}; j.bans[name] = pRid; }
+    j.purged[name] = pts;                      /* تۆماری نادیار: ڕێگری دەکات لە گەڕانەوەی ئەو کەسە تا خۆی دووبارە تۆمار بێتەوە */
+    window._lastBackup = j;
+    stat("٣/٤ سڕینەوەی کۆنەکە...");
+    return sleep(900).then(function () { return pf(basketUrl(), { method: "DELETE" }); }).then(function (d) {
+      if (!d.ok && d.status !== 400) throw new Error("سڕینەوە " + d.status);
+      stat("٤/٤ پاشەکەوتکردن...");
+      return sleep(900).then(function () { return pf(basketUrl(), { method: "POST", headers: H, body: JSON.stringify(j) }, 15); });
     });
-  }).catch(function () { say("نەتوانرا پەیوەندی بکرێت."); });
+  }).then(function (p) {
+    if (!p.ok) throw new Error("پاشەکەوتکردن " + p.status + " — داتا لە بیرگەی ئەم لاپەڕەدایە، لاپەڕەکە دامەخە و دووبارە هەوڵ بدەرەوە");
+    delete pendingPurge[name];
+    window._lastBackup = null;
+    say("«" + name + "» بە یەکجاری سڕایەوە ✔ سکریپتەکەی لەسەر کۆمپیوتەرەکەی ناو و تاسک و کۆد لەبیر دەکات و دادەخرێت؛ کاتێک دووبارە بیکاتەوە، خۆی تۆمار دەبێتەوە.");
+  }).catch(function (e) {
+    say("نەتوانرا: " + (e && e.message ? e.message : "پەیوەندی نییە") + ". دووبارە هەوڵ بدەرەوە.");
+  });
+}
+
+function unblock(name) { unblockMany([name]); }
+function unblockMany(list) {
+  if (!pid()) { say("Pantry ID بنووسە."); return; }
+  if (!list.length) return;
+  var H = { "Content-Type": "application/json" };
+  list.forEach(function (n) { pendingUnblock[n] = 1; delete pendingBlock[n]; delete pendingPurge[n]; delete pendingBan[n]; delete S.blocked[n]; delete S.purged[n]; delete S.bans[n]; });
+  save(); renderAll();
+  stat("١/٣ خوێندنەوەی داتا...");
+  pf(basketUrl(), { cache: "no-store" }).then(function (g) {
+    if (!g.ok) throw new Error("خوێندنەوە " + g.status);
+    return g.json();
+  }).then(function (j) {
+    if (j.blocked) list.forEach(function (n) { delete j.blocked[n]; });
+    if (j.purged) list.forEach(function (n) { delete j.purged[n]; });
+    if (j.bans) list.forEach(function (n) { delete j.bans[n]; });
+    window._lastBackup = j;
+    stat("٢/٣ سڕینەوەی کۆنەکە...");
+    return sleep(900).then(function () { return pf(basketUrl(), { method: "DELETE" }); }).then(function (d) {
+      if (!d.ok && d.status !== 400) throw new Error("سڕینەوە " + d.status);
+      stat("٣/٣ پاشەکەوتکردن...");
+      return sleep(900).then(function () { return pf(basketUrl(), { method: "POST", headers: H, body: JSON.stringify(j) }, 15); });
+    });
+  }).then(function (p) {
+    if (!p.ok) throw new Error("پاشەکەوتکردن " + p.status + " — داتا لە بیرگەی ئەم لاپەڕەدایە، لاپەڕەکە دامەخە و دووبارە هەوڵ بدەرەوە");
+    list.forEach(function (n) { delete pendingUnblock[n]; });
+    window._lastBackup = null;
+    say("ڕێگەیان پێ درا ✔ — ئێستا دەبێت لەسەر کۆمپیوتەرەکەیان task_counter.ahk دووبارە بکەنەوە و تۆمار بن، ئینجا لێرە دەردەکەون.");
+  }).catch(function (e) {
+    say("نەتوانرا: " + (e && e.message ? e.message : "پەیوەندی نییە") + ". دووبارە هەوڵ بدەرەوە.");
+  });
 }
 function renderBlocked() {
-  var h = $("blocked"), names = Object.keys(S.blocked);
-  h.innerHTML = "";
-  if (!names.length) { h.textContent = "هیچ کەسێک ڕەش نەکراوە."; return; }
+  var h2 = $("blocked");
+  var names = Object.keys(S.blocked).filter(function (n) { return isBlocked(n, S.people[n]); });
+  h2.innerHTML = "";
+  if (!names.length) { h2.textContent = "هیچ کەسێک ڕەش نەکراوە."; return; }
   names.forEach(function (n) {
     var row = el("div", "f");
     row.appendChild(el("span", "", n));
     var b = el("button", "ghost sm", "گەڕاندنەوە");
     b.onclick = function () { unblock(n); };
     row.appendChild(b);
-    h.appendChild(row);
+    var b2 = el("button", "ghost sm trash", "سڕینەوەی یەکجاری");
+    b2.onclick = function () {
+      ask("سڕینەوەی یەکجاریی «" + n + "»؟", "ئەم کەسە بە تەواوی لە لیست و Pantry دەسڕێتەوە. سکریپتەکەی لەسەر کۆمپیوتەرەکەی ناو و تاسک و کۆد لەبیر دەکات و دادەخرێت؛ دەبێت کاتێک دووبارە بیکاتەوە خۆی تۆمار ببێتەوە.", "بەڵێ، یەکجاری", function () { purgeForever(n); });
+    };
+    row.appendChild(b2);
+    h2.appendChild(row);
+  });
+  if (names.length > 1) {
+    var all = el("button", "ghost sm", "گەڕاندنەوەی هەمووان (" + names.length + ")");
+    all.onclick = function () { unblockMany(names.slice()); };
+    h2.appendChild(all);
+  }
+}
+
+/* پاککردنەوەی گشتی: هەموو کەس لابەرێت، هەموو سکریپتەکان (کۆن و نوێ) داوا دەکەن ناو و تاسک دووبارە بنووسرێتەوە */
+function cleanAll() {
+  if (!pid()) { say("Pantry ID بنووسە."); return; }
+  var H = { "Content-Type": "application/json" };
+  var ctl = BASE + encodeURIComponent(pid()) + "/basket/reset";
+  var ts = Date.now();
+  var keep = {};
+  Object.keys(S.prices).forEach(function (t) { keep[t] = S.prices[t]; });
+  var names = {};
+  Object.keys(S.people).concat(Object.keys(S.blocked)).forEach(function (n) { names[n] = 1; });
+  pendingCutoff = ts; S.cutoff = ts; S.people = {}; S.blocked = {}; S.bans = {}; S.renames = {}; sel = "";
+  save(); renderAll();
+  stat("١/٤ خوێندنەوەی ناوی هەموو کەسەکان...");
+  pf(basketUrl(), { cache: "no-store" }).then(function (g) {
+    return g.ok ? g.json() : {};
+  }).catch(function () { return {}; }).then(function (j) {
+    Object.keys((j && j.people) || {}).concat(Object.keys((j && j.blocked) || {})).forEach(function (n) { names[n] = 1; });
+    stat("٢/٤ سڕینەوەی داتای کۆن...");
+    return sleep(900).then(function () { return pf(basketUrl(), { method: "DELETE" }); });
+  }).then(function (d) {
+    if (!d.ok && d.status !== 400) throw new Error("سڕینەوە " + d.status);
+    stat("٣/٤ دروستکردنەوەی پاک...");
+    return sleep(900).then(function () {
+      return pf(basketUrl(), { method: "POST", headers: H, body: JSON.stringify({ people: {}, prices: keep, blocked: {}, bans: {}, cutoff: ts }) }, 15);
+    });
+  }).then(function (p) {
+    if (!p.ok) throw new Error("دروستکردنەوە " + p.status);
+    stat("٤/٤ ناردنی نیشانە بۆ سکریپتەکان...");
+    /* removed: بۆ سکریپتە کۆنەکان (کە cutoff نازانن) خۆیان دەسڕنەوە و ناو و تاسک دووبارە دەپرسن */
+    var removed = {};
+    Object.keys(names).forEach(function (n) { removed[n] = ts; });
+    return sleep(900).then(function () {
+      return pf(ctl, { method: "POST", headers: H, body: JSON.stringify({ id: ts, cutoff: ts, removed: removed }) }, 15);
+    });
+  }).then(function (r) {
+    if (!r.ok) throw new Error("نیشانە " + r.status);
+    say("پاک کرایەوە ✔ لە ماوەی چەند خولەکێکدا سکریپتی هەر کەسێک (کۆن یان نوێ) ناو و تاسک و کۆد دووبارە دەپرسێتەوە یان دادەخرێت تا خۆیان دووبارە بیکەنەوە.");
+  }).catch(function (e) {
+    say("نەتوانرا بە تەواوی پاک بکرێتەوە: " + (e && e.message ? e.message : "پەیوەندی نییە") + ". دووبارە هەوڵ بدەرەوە.");
   });
 }
 
@@ -719,11 +983,12 @@ function doReset() {
   var ctl = BASE + encodeURIComponent(pid()) + "/basket/reset";
   var H = { "Content-Type": "application/json" };
   /* یەکەم: نیشانەی سفرکردنەوە بنێرە، بۆ ئەوەی سکریپتی هەموو کەسێک ژمارەکانی خۆی سفر بکاتەوە */
-  fetch(ctl, { method: "POST", headers: H, body: JSON.stringify({ id: Date.now() }) }).then(function (r) {
+  var rb = JSON.stringify(S.cutoff ? { id: Date.now(), cutoff: S.cutoff } : { id: Date.now() });
+  pf(ctl, { method: "PUT", headers: H, body: rb }).then(function (r) { return r.ok ? r : pf(ctl, { method: "POST", headers: H, body: rb }); }).then(function (r) {
     if (!r.ok) { say("هەڵە لە ناردنی نیشانەی سفرکردنەوە: " + r.status); return; }
     return fetch(basketUrl(), { method: "DELETE" }).then(function (r1) {
       if (!r1.ok && r1.status !== 400) { say("هەڵە لە سڕینەوە: " + r1.status); return; }
-      return fetch(basketUrl(), { method: "POST", headers: H, body: JSON.stringify({ people: {}, prices: keep, blocked: S.blocked }) }).then(function (r2) {
+      return fetch(basketUrl(), { method: "POST", headers: H, body: JSON.stringify({ people: {}, prices: keep, blocked: S.blocked, purged: S.purged, bans: S.bans, cutoff: S.cutoff || 0, renames: S.renames }) }).then(function (r2) {
         if (!r2.ok) { say("هەڵە لە دروستکردنەوە: " + r2.status); return; }
         S.people = {}; save(); renderAll();
         say("داتا سڕایەوە ✔ لە ماوەی ٢ خولەکدا لای هەموو کەسێک سفر دەبێتەوە (نرخەکان مانەوە)");
@@ -751,6 +1016,17 @@ $("copycode").onclick = function () {
     if (!ok) { $("pid").focus(); $("pid").select(); }
   });
 };
+
+function openPantry() {
+  var c = pid();
+  var go = function (ok) {
+    say((ok ? "Pantry ID کۆپی کرا ✔ " : "") + "لە Pantry دا ID ەکە دابنێ، بچۆ بۆ Dashboard، ئینجا باسکێتی «shift» بکەرەوە و ناوی کەسەکە لە people و blocked و purged بسڕەوە.");
+    window.open("https://getpantry.cloud/", "_blank");
+  };
+  if (c) copyText(c).then(go); else go(false);
+}
+$("openpantry").onclick = openPantry;
+$("openpantry2").onclick = openPantry;
 
 setMonth(new Date());
 if (pid()) {
