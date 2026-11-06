@@ -759,6 +759,18 @@
       direction: ltr;
     }
 
+    tr.tg td {
+      background: var(--th);
+      font-weight: 800;
+      border-top: 2px solid var(--line);
+    }
+    tr.tg td span {
+      color: var(--mut);
+      font-weight: 600;
+      font-size: 0.82rem;
+      margin-inline-start: 10px;
+    }
+
     @media print {
       @page { size: A4; margin: 12mm; }
       body > *:not(#pv) { display: none !important; }
@@ -1113,7 +1125,7 @@ function render() {
     return `<tr>
       <td><b>${esc(p.person_name)}</b></td>
       <td>
-        <span class="te" data-t="${esc(p.task_name)}" title="دەستکاری تاسک">
+        <span class="te" data-t="${esc(p.task_name)}" data-rid="${esc(p.rid)}" title="دەستکاری تاسک">
           ${esc(p.task_name)} ✎
         </span>
       </td>
@@ -1132,17 +1144,34 @@ function render() {
   document.querySelectorAll(".del").forEach(b => b.onclick = () => delFlow(b.dataset.rid, b.dataset.n));
 
   if (!$("tasks").contains(document.activeElement)) {
-    const names = [...new Set([...W.map(x => x.task_name), ...BW.map(x => x.task_name), ...BD.map(x => x.task_name), ...Object.keys(P)])].sort();
-    const tm = {};
-    BD.forEach(x => tm[x.task_name] = (tm[x.task_name] || 0) + x.total);
+    const nmr = Object.fromEntries(W.map(x => [x.rid, x.person_name]));
+    const G = {};
+    const add = (t, rid, c) => {
+      if (!t || !(rid in nmr)) return;
+      const g = G[t] || (G[t] = {});
+      g[rid] = (g[rid] || 0) + c;
+    };
+    W.forEach(x => add(x.task_name, x.rid, 0));
+    BW.forEach(x => add(x.task_name, x.rid, Number(x.total || 0)));
 
-    $("tasks").innerHTML = '<table style="min-width:420px"><thead><tr><th>ناوی تاسک</th><th>نرخ (بۆ هەر یەک)</th><th>کۆی مانگ</th><th style="text-align:center">کردار</th></tr></thead><tbody>' +
-      names.map(n => `<tr>
-        <td><input value="${esc(n)}" data-old="${esc(n)}" class="tn" style="font-weight:700"></td>
-        <td><input type="number" min="0" step="any" value="${price(n)}" class="tp"></td>
-        <td style="direction:ltr; text-align:left; font-weight:800">${N(tm[n])}</td>
-        <td style="text-align:center"><button class="tsv pri" style="padding:6px 14px">پاشەکەوت</button></td>
-      </tr>`).join("") + "</tbody></table>";
+    const groups = Object.entries(G).map(([t, g]) => {
+      const people = Object.entries(g)
+        .map(([rid, c]) => ({ rid, c }))
+        .sort((a, b) => b.c - a.c || nmr[a.rid].localeCompare(nmr[b.rid], "ckb"));
+      return { t, people, total: people.reduce((s, p) => s + p.c, 0) };
+    }).sort((a, b) => b.total - a.total || a.t.localeCompare(b.t, "ckb"));
+
+    $("tasks").innerHTML = '<table style="min-width:520px"><thead><tr><th>کارمەند</th><th>ناوی تاسک</th><th>نرخ (بۆ هەر یەک)</th><th>کۆی مانگ</th><th style="text-align:center">کردار</th></tr></thead><tbody>' +
+      (groups.map((g, i) => `<tr class="tg"><td colspan="5">${i + 1}. ${esc(g.t)} <span>کۆی مانگ: ${N(g.total)}</span></td></tr>` +
+        g.people.map(p => `<tr data-rid="${esc(p.rid)}">
+          <td><b>${esc(nmr[p.rid])}</b></td>
+          <td><input value="${esc(g.t)}" data-old="${esc(g.t)}" class="tn" style="font-weight:700"></td>
+          <td><input type="number" min="0" step="any" value="${price(g.t)}" class="tp"></td>
+          <td style="direction:ltr; text-align:left; font-weight:800">${N(p.c)}</td>
+          <td style="text-align:center"><button class="tsv pri" style="padding:6px 14px">پاشەکەوت</button></td>
+        </tr>`).join("")).join("") ||
+        '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--mut);">هیچ تاسکێک نییە</td></tr>') +
+      "</tbody></table>";
 
     document.querySelectorAll(".tsv").forEach(b => b.onclick = () => saveTask(b.closest("tr")));
   }
@@ -1181,7 +1210,7 @@ function render() {
   $("detail").innerHTML = SD.map(x => `<tr>
     <td><b>${esc(nm[x.rid] || x.rid)}</b></td>
     <td>
-      <span class="te" data-t="${esc(x.task_name)}" title="دەستکاری تاسک">
+      <span class="te" data-t="${esc(x.task_name)}" data-rid="${esc(x.rid)}" title="دەستکاری تاسک">
         ${esc(x.task_name)} ✎
       </span>
     </td>
@@ -1205,7 +1234,11 @@ async function admin(fn, args) {
     }
     return r;
   } catch (e) {
-    alert(e.message);
+    if (/PGRST202/.test(e.message) && /rename_worker_task/.test(e.message)) {
+      alert("فەنکشنی rename_worker_task لە Supabase نییە.\nفایلی supabase_full.sql لە SQL Editor دا Run بکە، پاشان Ctrl+F5.");
+    } else {
+      alert(e.message);
+    }
     return null;
   }
 }
@@ -1242,19 +1275,22 @@ function delFlow(rid, n) {
 }
 
 async function saveTask(tr) {
+  const rid = tr.dataset.rid;
+  const who = (W.find(x => x.rid == rid) || {}).person_name || rid;
   const old = tr.querySelector(".tn").dataset.old;
   const nn = tr.querySelector(".tn").value.trim();
-  const pr = tr.querySelector(".tp").value;
+  const pr = Number(tr.querySelector(".tp").value || 0);
   let name = old;
 
   if (nn && nn != old) {
-    if (!confirm("ناوی «" + old + "» بگۆڕدرێت بۆ «" + nn + "»؟ هەموو داتا کۆنەکانیش دەگۆڕێت.")) return;
-    if (!await admin("rename_task", { p_old: old, p_new: nn })) return;
+    if (!confirm("ناوی تاسکی «" + who + "» لە «" + old + "» بگۆڕدرێت بۆ «" + nn + "»؟ تەنها بۆ ئەم کەسە دەگۆڕێت.")) return;
+    if (!await admin("rename_worker_task", { p_rid: rid, p_old: old, p_new: nn })) return;
     name = nn;
   }
-  if (await admin("set_task_price", { p_task: name, p_price: Number(pr || 0) })) {
-    refresh();
+  if (name != old || pr != price(name)) {
+    if (!await admin("set_task_price", { p_task: name, p_price: pr })) return;
   }
+  refresh();
 }
 
 $("csv").onclick = async () => {
@@ -1406,11 +1442,12 @@ $("pdf").onclick = async () => {
   $("status").textContent = "ڕاپۆرت ئامادەیە ✔";
 };
 
-function editTask(old) {
+function editTask(old, rid) {
+  const who = (W.find(x => x.rid == rid) || {}).person_name || "";
   modal(`
     <div style="font-size:1.8rem; margin-bottom:6px;">✎</div>
     <h2>دەستکاری تاسک</h2>
-    <p class="mut">ناوی نوێ هەموو داتا و ڕاپۆرتەکانی «<b>${esc(old)}</b>» دەگۆڕێت.</p>
+    <p class="mut">ناوی نوێ تەنها بۆ «<b>${esc(who)}</b>» دەگۆڕێت، کەسانی تر ناگۆڕێن.</p>
     <label>ناوی تاسک</label>
     <input id="en" value="${esc(old)}">
     <label>نرخ (بۆ هەر یەک دانە)</label>
@@ -1429,7 +1466,7 @@ function editTask(old) {
     close();
     let name = old;
     if (nn != old) {
-      if (!await admin("rename_task", { p_old: old, p_new: nn })) return;
+      if (!await admin("rename_worker_task", { p_rid: rid, p_old: old, p_new: nn })) return;
       name = nn;
     }
     if (await admin("set_task_price", { p_task: name, p_price: pr })) refresh();
@@ -1438,7 +1475,7 @@ function editTask(old) {
 
 document.addEventListener("click", e => {
   const t = e.target.closest(".te");
-  if (t) editTask(t.dataset.t);
+  if (t) editTask(t.dataset.t, t.dataset.rid);
 });
 
 const shiftM = d => {
