@@ -1,134 +1,1517 @@
 <!doctype html>
-<html lang="ku" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KHUNAW-ABDULKHALQ-AKAM</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700;800&family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#f2f2f5;--card:#fff;--line:#eeeef2;--txt:#15151a;--mut:#7a7a86;--red:#e11d2e;--red2:#ff4d5e;--red-soft:#fdeaec;--ok:#12805c;--ok-soft:#dff5ea;--r:26px;--inp:#f5f5f8;--th:#f7f7fa;--hov:#fff6f7;--glow:#ffe3e6;--sh:0 12px 34px rgba(225,29,46,.22),0 2px 6px rgba(20,20,30,.06)}
-:root[data-theme=dark]{--bg:#0a0a0c;--card:#16161a;--line:#2a2a31;--txt:#f5f5f7;--mut:#9b9ba7;--red-soft:rgba(225,29,46,.18);--ok-soft:rgba(18,128,92,.25);--ok:#34d399;--inp:#222228;--th:#1d1d22;--hov:#201317;--glow:#2a0b10;--sh:0 12px 38px rgba(225,29,46,.38),0 0 0 1px rgba(255,255,255,.04)}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(700px 320px at 100% 0,var(--glow) 0,transparent 70%),var(--bg);color:var(--txt);font-family:"Noto Sans Arabic",Inter,Tahoma,sans-serif;font-size:15px;line-height:1.6}
-.wrap{max-width:1280px;margin:auto;padding:22px 20px 44px}
-.hero{background:linear-gradient(135deg,#0c0c10 0%,#23232b 60%,#3a0e14 100%);color:#fff;border-radius:30px;padding:24px 30px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 22px 44px rgba(12,12,16,.35),inset 0 -4px 0 var(--red);margin-bottom:20px}
-h1{margin:0;font-family:Inter,sans-serif;font-size:1.4rem;font-weight:800;letter-spacing:1.2px;direction:ltr;color:#fff}
-h1::before{content:"";display:inline-block;width:13px;height:13px;border-radius:50%;background:var(--red2);margin-inline-end:11px;box-shadow:0 0 0 5px rgba(255,77,94,.28)}
-.hero p{margin:3px 0 0;color:#b4b4bf;font-size:.85rem}
-.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 22px;background:var(--card);border-radius:999px;padding:8px 10px;box-shadow:var(--sh)}
-.hero .bar{margin:0;background:none;box-shadow:none;padding:0}
-button,input,select{font:inherit;color:var(--txt);background:var(--inp);border:1.5px solid transparent;border-radius:999px;padding:9px 18px;outline:0;transition:.18s}
-input:focus,select:focus{border-color:var(--red);background:var(--card);box-shadow:0 0 0 4px rgba(225,29,46,.13)}
-button{cursor:pointer;font-weight:600}button:hover{background:var(--red-soft);color:var(--red);transform:translateY(-2px);box-shadow:0 8px 16px rgba(20,20,30,.12)}
-.hero button:not(.pri){background:rgba(255,255,255,.1);color:#fff}.hero button:not(.pri):hover{background:#fff;color:#111}
-.pri{background:linear-gradient(135deg,var(--red2),var(--red));color:#fff;box-shadow:0 8px 20px rgba(225,29,46,.4)}.pri:hover{background:linear-gradient(135deg,var(--red2),var(--red));color:#fff;filter:brightness(1.07)}
-#search{flex:1;min-width:190px}
-.cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;margin-bottom:20px}
-.card{background:var(--card);border-radius:var(--r);padding:22px;box-shadow:var(--sh);min-width:0}
-.cards .card{position:relative;padding:18px 20px 20px;transition:.2s}.cards .card:hover{transform:translateY(-4px)}
-.cards .card::before{content:attr(data-i);width:42px;height:42px;border-radius:16px;background:var(--red-soft);box-shadow:inset 0 0 0 1px #f7cdd1;display:flex;align-items:center;justify-content:center;font-size:1.15rem;margin-bottom:12px}
-.k{color:var(--mut);font-size:.82rem;font-weight:500}.v{font-size:1.75rem;font-weight:800;line-height:1.25;font-family:Inter,"Noto Sans Arabic",sans-serif}.v.r{color:var(--red)}.v.g{color:var(--ok)}
-h3{margin:0 0 16px;font-size:1.08rem}h3::before{content:"";display:inline-block;width:6px;height:18px;border-radius:6px;background:var(--red);margin-inline-end:10px;vertical-align:-3px}
-.scroll{overflow:auto;max-height:60vh;border-radius:20px;border:1px solid var(--line)}
-table{width:100%;border-collapse:separate;border-spacing:0;min-width:760px}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
-th{position:sticky;top:0;background:var(--th);color:var(--mut);font-weight:700;font-size:.78rem;z-index:1}tbody tr:last-child td{border-bottom:0}tbody tr:hover td{background:var(--hov)}
-.pill{padding:4px 14px;border-radius:999px;font-size:.78rem;font-weight:700}.on{background:var(--ok-soft);color:var(--ok)}.off{background:var(--red-soft);color:var(--red)}
-small,.mut{color:var(--mut);font-size:.8rem}.err{color:var(--red)}.big{font-weight:800;font-family:Inter,sans-serif}
-.del{padding:7px 13px;background:var(--red-soft);color:var(--red)}.del:hover{background:var(--red);color:#fff}
-.wrap>.card{margin-bottom:24px}.g2{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;margin-bottom:24px}tr.sel td{background:var(--red-soft)}tr.clk{cursor:pointer}
-td input{width:100%;min-width:120px;padding:7px 14px;background:var(--inp)}
-.ov{position:fixed;inset:0;background:rgba(12,12,16,.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px}
-.md{background:var(--card);color:var(--txt);border-radius:30px;padding:30px;max-width:420px;width:100%;box-shadow:0 34px 80px rgba(0,0,0,.45);text-align:center;animation:pop .2s ease}
-.md h2{margin:0 0 8px;font-size:1.25rem}.md .row{display:flex;gap:10px;margin-top:22px}.md .row button{flex:1;padding:11px}
-@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
-@media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}.wrap{padding:12px 12px 30px}.bar{border-radius:26px}}
-.lg{position:fixed;inset:0;background:radial-gradient(700px 320px at 100% 0,var(--glow) 0,transparent 70%),var(--bg);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}.lgb{background:var(--card);border-radius:30px;padding:34px;max-width:380px;width:100%;box-shadow:var(--sh);text-align:center}.lgb h1{color:var(--txt);font-size:1.15rem;margin-bottom:6px}.lgb input{width:100%;margin-top:12px;text-align:center}
-</style></head><body>
-<div class="lg" id="login"><div class="lgb"><h1>KHUNAW-ABDULKHALQ-AKAM</h1><p class="mut">بچۆرە ژوورەوە بۆ بینینی داشبۆرد</p>
-<input id="lu" placeholder="بەکارهێنەر" autocomplete="username"><input id="lp" type="password" placeholder="وشەی نهێنی" autocomplete="current-password">
-<button class="pri" id="lgo" style="width:100%;margin-top:16px;padding:12px">چوونەژوورەوە</button><div class="err" id="lerr" style="margin-top:10px;min-height:22px"></div></div></div>
+<html lang="ku" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KHUNAW-ABDULKHALQ-AKAM • داشبۆردی داتا ئینتری</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font: "Vazirmatn", -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif;
+      --bg: #eef2f6;
+      --card: #ffffff;
+      --line: #e2e8f0;
+      --txt: #0f172a;
+      --mut: #64748b;
+      --red: #dc2626;
+      --red-hover: #b91c1c;
+      --red-soft: #fef2f2;
+      --red-border: #fecaca;
+      --ok: #15803d;
+      --ok-soft: #f0fdf4;
+      --ok-border: #bbf7d0;
+      --inp: #f8fafc;
+      --th: #f1f5f9;
+      --hov: #fff5f5;
+      --sel: #fee2e2;
+      --r: 16px;
+      --sh: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+      --sh-lg: 0 20px 40px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06);
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #090d16;
+      --card: #131b2e;
+      --line: #222d45;
+      --txt: #f8fafc;
+      --mut: #94a3b8;
+      --red: #ef4444;
+      --red-hover: #dc2626;
+      --red-soft: rgba(239, 68, 68, 0.15);
+      --red-border: rgba(239, 68, 68, 0.3);
+      --ok: #22c55e;
+      --ok-soft: rgba(34, 197, 94, 0.15);
+      --ok-border: rgba(34, 197, 94, 0.3);
+      --inp: #182238;
+      --th: #182238;
+      --hov: #22151b;
+      --sel: #35131b;
+      --sh: 0 4px 20px rgba(0, 0, 0, 0.45);
+      --sh-lg: 0 20px 50px rgba(0, 0, 0, 0.7);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--txt);
+      font-size: 14.5px;
+      line-height: 1.6;
+      min-height: 100vh;
+      direction: rtl;
+    }
+
+    .wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 22px 20px 50px;
+    }
+
+    /* Executive Classic Hero */
+    .hero {
+      background: linear-gradient(135deg, #090d16 0%, #151d30 65%, #2a0b12 100%);
+      color: #ffffff;
+      border-radius: var(--r);
+      padding: 22px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      box-shadow: 0 16px 36px rgba(9, 13, 22, 0.45);
+      border-bottom: 4px solid var(--red);
+      margin-bottom: 20px;
+    }
+
+    .hero-title h1 {
+      margin: 0;
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      direction: ltr;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: #ffffff;
+    }
+
+    .hero-title h1::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 0 5px rgba(220, 38, 38, 0.35);
+      display: inline-block;
+    }
+
+    .hero-title p {
+      margin: 4px 0 0;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button, input, select {
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--txt);
+      background: var(--inp);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 16px;
+      outline: 0;
+      transition: all 0.18s ease;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      user-select: none;
+    }
+
+    button:hover {
+      background: var(--card);
+      border-color: var(--txt);
+      transform: translateY(-1px);
+    }
+
+    .hero button {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .hero button:hover {
+      background: #ffffff;
+      color: #0f172a;
+      transform: translateY(-1.5px);
+    }
+
+    .pri {
+      background: var(--red) !important;
+      color: #ffffff !important;
+      border: 1px solid var(--red) !important;
+      box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+    }
+
+    .pri:hover {
+      background: var(--red-hover) !important;
+      filter: brightness(1.08);
+      transform: translateY(-1.5px);
+    }
+
+    input:focus, select:focus {
+      border-color: var(--red);
+      background: var(--card);
+      box-shadow: 0 0 0 3px var(--red-soft);
+    }
+
+    /* Classic Toolbar */
+    .bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 22px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 12px 18px;
+      box-shadow: var(--sh);
+    }
+
+    .month-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--inp);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 3px;
+    }
+
+    .month-nav button {
+      border: none;
+      background: transparent;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 800;
+    }
+
+    .month-nav button:hover {
+      background: var(--card);
+    }
+
+    .month-nav input[type="month"] {
+      border: none;
+      background: transparent;
+      padding: 6px 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #search {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    #filter {
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .status-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--mut);
+      padding: 7px 14px;
+      background: var(--inp);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 3px var(--ok-soft);
+    }
+
+    /* Classic KPI Cards */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 20px 22px;
+      box-shadow: var(--sh);
+      position: relative;
+    }
+
+    .cards .card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      border-top: 3px solid transparent;
+    }
+
+    .cards .card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--sh-lg);
+    }
+
+    .cards .card.c-workers { border-top-color: #3b82f6; }
+    .cards .card.c-on { border-top-color: var(--ok); }
+    .cards .card.c-off { border-top-color: var(--mut); }
+    .cards .card.c-today { border-top-color: var(--red); }
+    .cards .card.c-month { border-top-color: #8b5cf6; }
+    .cards .card.c-money { border-top-color: var(--ok); }
+
+    .k-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .k {
+      color: var(--mut);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .card-icon {
+      font-size: 1.15rem;
+    }
+
+    .v {
+      font-size: 1.95rem;
+      font-weight: 900;
+      line-height: 1.2;
+      direction: ltr;
+      text-align: right;
+    }
+
+    .v.r { color: var(--red); }
+    .v.g { color: var(--ok); }
+
+    .kpi-sub {
+      color: var(--mut);
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      direction: rtl;
+    }
+
+    .kpi-sub b {
+      direction: ltr;
+      display: inline-block;
+      color: var(--txt);
+      font-weight: 800;
+    }
+
+    /* Tables & Card Panels */
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h3::before {
+      content: "";
+      width: 5px;
+      height: 20px;
+      border-radius: 4px;
+      background: var(--red);
+      display: inline-block;
+    }
+
+    .scroll {
+      overflow-x: auto;
+      max-height: 60vh;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--th);
+      color: var(--mut);
+      font-weight: 800;
+      font-size: 0.82rem;
+      z-index: 2;
+      border-bottom: 2px solid var(--line);
+    }
+
+    tbody tr:hover td {
+      background: var(--hov);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr.sel td {
+      background: var(--sel) !important;
+      font-weight: 700;
+    }
+
+    tr.clk {
+      cursor: pointer;
+    }
+
+    .big {
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+
+    /* Total Accounting Row */
+    .total-row td {
+      background: var(--th) !important;
+      font-weight: 800;
+      border-top: 2px solid var(--line);
+      border-bottom: 2px solid var(--line);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .pill.on {
+      background: var(--ok-soft);
+      color: var(--ok);
+      border: 1px solid var(--ok-border);
+    }
+
+    .pill.on::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ok);
+    }
+
+    .pill.off {
+      background: var(--red-soft);
+      color: var(--red);
+      border: 1px solid var(--red-border);
+    }
+
+    .pill.off::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .te {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 8px;
+      background: var(--inp);
+      border: 1px dashed var(--line);
+      font-weight: 700;
+      color: var(--txt);
+      transition: all 0.15s ease;
+    }
+
+    .te:hover {
+      background: var(--red-soft);
+      color: var(--red);
+      border-color: var(--red);
+    }
+
+    .del {
+      padding: 6px 14px;
+      background: var(--red-soft);
+      color: var(--red);
+      border: 1px solid var(--red-border);
+      border-radius: 8px;
+      font-weight: 700;
+    }
+
+    .del:hover {
+      background: var(--red);
+      color: #ffffff;
+      border-color: var(--red);
+    }
+
+    .g2 {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 22px;
+      margin: 22px 0;
+    }
+
+    td input {
+      width: 100%;
+      min-width: 110px;
+      padding: 7px 12px;
+      background: var(--inp);
+    }
+
+    /* Login Screen */
+    .lg {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 100% 0%, rgba(220, 38, 38, 0.15) 0%, transparent 60%), var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .lgb {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 38px 34px;
+      max-width: 410px;
+      width: 100%;
+      box-shadow: var(--sh-lg);
+      text-align: center;
+      border-top: 4px solid var(--red);
+    }
+
+    .lgb h1 {
+      font-size: 1.28rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: var(--txt);
+      direction: ltr;
+    }
+
+    .lgb p {
+      color: var(--mut);
+      font-size: 0.88rem;
+      margin-bottom: 22px;
+    }
+
+    .lgb input {
+      width: 100%;
+      margin-top: 12px;
+      text-align: center;
+      padding: 11px 16px;
+      font-size: 14.5px;
+    }
+
+    .lgb button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 12px;
+      font-size: 15px;
+    }
+
+    .err {
+      color: var(--red);
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    /* Modals & Dialogs */
+    .ov {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.65);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 110;
+      padding: 16px;
+    }
+
+    .md {
+      background: var(--card);
+      color: var(--txt);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: var(--sh-lg);
+      text-align: center;
+      animation: pop 0.18s ease;
+    }
+
+    .md h2 {
+      margin: 0 0 8px;
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    .md p {
+      color: var(--mut);
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+
+    .md label {
+      display: block;
+      text-align: right;
+      margin-top: 14px;
+      margin-bottom: 5px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--mut);
+    }
+
+    .md input {
+      width: 100%;
+      text-align: center;
+      font-weight: 700;
+      padding: 10px;
+    }
+
+    .md .row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .md .row button {
+      flex: 1;
+      padding: 11px;
+    }
+
+    @keyframes pop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* PDF View */
+    #pv:empty { display: none; }
+    .pv {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.85);
+      z-index: 120;
+      overflow-y: auto;
+      padding: 20px 16px;
+    }
+
+    .pvb {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 12px 20px;
+      border-radius: 999px;
+      box-shadow: var(--sh-lg);
+      width: fit-content;
+      margin-inline: auto;
+    }
+
+    .pg {
+      background: #ffffff;
+      color: #0f172a;
+      width: 210mm;
+      max-width: 100%;
+      min-height: 297mm;
+      margin: 0 auto 16px;
+      padding: 16mm;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
+      direction: rtl;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .pg .ph {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 3px solid #dc2626;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+
+    .pg .ph b {
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      direction: ltr;
+      color: #dc2626;
+    }
+
+    .pg h2 {
+      margin: 0;
+      font-size: 21px;
+      font-weight: 800;
+    }
+
+    .pg .pm {
+      color: #64748b;
+      font-size: 12.5px;
+    }
+
+    .pg table {
+      min-width: 0;
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .pg th, .pg td {
+      border: 1px solid #94a3b8;
+      padding: 8px 12px;
+      white-space: normal;
+      text-align: right;
+      color: #0f172a;
+      font-size: 12.5px;
+      background: transparent !important;
+    }
+
+    .pg th {
+      background: #f1f5f9 !important;
+      font-weight: 800;
+    }
+
+    .pg tr:nth-child(even) td {
+      background: #f8fafc !important;
+    }
+
+    .pg tfoot td {
+      background: #fef2f2 !important;
+      font-weight: 800;
+      border-top: 2px solid #dc2626;
+    }
+
+    .pg td.n, .pg th.n {
+      text-align: center;
+      width: 1%;
+      white-space: nowrap;
+      direction: ltr;
+    }
+
+    @media print {
+      @page { size: A4; margin: 12mm; }
+      body > *:not(#pv) { display: none !important; }
+      body { background: #ffffff !important; }
+      .pv { position: static; background: none; padding: 0; overflow: visible; }
+      .pvb { display: none; }
+      .pg { margin: 0; box-shadow: none; width: auto; min-height: 0; padding: 0; break-after: page; }
+      .pg:last-child { break-after: auto; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    @media (max-width: 1100px) {
+      .cards { grid-template-columns: repeat(3, 1fr); }
+      .g2 { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .wrap { padding: 12px 12px 40px; }
+      .hero { flex-direction: column; align-items: stretch; text-align: center; }
+      .hero-title h1 { justify-content: center; }
+      .hero-actions { justify-content: center; }
+      .bar { flex-direction: column; align-items: stretch; }
+      #search { min-width: 100%; }
+      .month-nav { justify-content: space-between; }
+    }
+
+    @media (max-width: 480px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="lg" id="login">
+  <div class="lgb">
+    <div style="font-size:2.2rem; margin-bottom:10px;">🔐</div>
+    <h1>KHUNAW-ABDULKHALQ-AKAM</h1>
+    <p>بچۆرە ژوورەوە بۆ دەستپێکردنی داشبۆرد</p>
+    <input id="lu" placeholder="ناوی بەکارهێنەر" autocomplete="username">
+    <input id="lp" type="password" placeholder="وشەی نهێنی" autocomplete="current-password">
+    <button class="pri" id="lgo">چوونەژوورەوە</button>
+    <div class="err" id="lerr" style="margin-top:12px; min-height:22px"></div>
+  </div>
+</div>
+
+<!-- Main Application -->
 <div class="wrap" id="app" style="display:none">
-<div class="hero"><div><h1>KHUNAW-ABDULKHALQ-AKAM</h1><p>بەڕێوەبردنی Shift+Enter • کارمەندان، تاسک، نرخ و مانگانە</p></div>
-<div class="bar" style="margin:0"><button id="out">⎋ دەرچوون</button><button id="theme">🌓 ڕەش / سپی</button><button id="csv">⬇ CSV ی مانگ</button><button id="refresh" class="pri">نوێکردنەوە</button></div></div>
-<div class="bar"><button id="prev">‹</button><input type="month" id="month"><button id="next">›</button>
-<input id="search" placeholder="گەڕان بە ناو یان تاسک"><select id="filter"><option value="all">هەمووان</option><option value="on">چالاک</option><option value="off">ناچالاک</option></select>
-<small id="status">چاوەڕوانی داتا...</small></div>
-<div class="cards">
-<div class="card" data-i="👥"><div class="k">کارمەندان</div><div class="v" id="kW">0</div></div>
-<div class="card" data-i="✅"><div class="k">چالاک</div><div class="v g" id="kOn">0</div></div>
-<div class="card" data-i="⏸"><div class="k">ناچالاک</div><div class="v r" id="kOff">0</div></div>
-<div class="card" data-i="🔥"><div class="k">ئەمڕۆ</div><div class="v r" id="kT">0</div><small id="kTm"></small></div>
-<div class="card" data-i="📅"><div class="k">کۆی مانگ</div><div class="v" id="kM">0</div></div>
-<div class="card" data-i="💰"><div class="k">نرخی مانگ</div><div class="v g" id="kMm">0</div></div></div>
-<div class="card"><h3>کارمەندان</h3><div class="scroll"><table><thead><tr><th>ناو</th><th>تاسک</th><th>دۆخ</th><th>ئەمڕۆ</th><th>مانگ</th><th>نرخی مانگ</th><th>دوایین پەیوەندی</th><th>ناردن</th><th>سڕینەوە</th></tr></thead><tbody id="rows"></tbody></table></div></div>
-<div class="g2"><div class="card"><h3>جۆری تاسک و نرخ</h3><div class="scroll" id="tasks"></div></div>
-<div class="card"><h3>ڕۆژانەی مانگ <small>(کلیک لەسەر ڕۆژ بکە)</small></h3><div class="scroll"><table style="min-width:360px"><thead><tr><th>ڕۆژ</th><th>ژمارە</th><th>نرخ</th></tr></thead><tbody id="days"></tbody></table></div></div></div>
-<div class="card"><h3 id="dTitle">وردەکاری ڕۆژ</h3><div class="scroll"><table style="min-width:480px"><thead><tr><th>کارمەند</th><th>تاسک</th><th>ژمارە</th><th>نرخ</th></tr></thead><tbody id="detail"></tbody></table></div></div>
-</div><div id="mod"></div>
+
+  <!-- Top Hero Header -->
+  <header class="hero">
+    <div class="hero-title">
+      <h1>KHUNAW-ABDULKHALQ-AKAM</h1>
+      <p>بەڕێوەبردنی Shift+Enter • چاودێری کارمەندان، تاسک، نرخ و ئاماری مانگانە</p>
+    </div>
+    <div class="hero-actions">
+      <button id="theme" title="گۆڕینی ڕەنگی ڕووناک / تاریک">🌓 ڕەش / سپی</button>
+      <button id="csv" title="داگرتنی داتا لە فایلی CSV">⬇ CSV ی مانگ</button>
+      <button id="pdf" class="pri" title="چاپکردنی ڕاپۆرتی فەرمی A4">🖨 PDF A4</button>
+      <button id="refresh" class="pri" title="نوێکردنەوەی خێرای داتاکان">🔄 نوێکردنەوە</button>
+      <button id="out" title="چوونەدەرەوە">⎋ دەرچوون</button>
+    </div>
+  </header>
+
+  <!-- Filter & Navigation Bar -->
+  <section class="bar">
+    <div class="month-nav">
+      <button id="prev" title="مانگی پێشوو">‹</button>
+      <input type="month" id="month">
+      <button id="next" title="مانگی دواتر">›</button>
+    </div>
+
+    <input id="search" placeholder="گەڕان بەدوای ناو یان تاسک...">
+
+    <select id="filter">
+      <option value="all">هەموو دۆخەکان</option>
+      <option value="on">تەنها چالاکەکان</option>
+      <option value="off">تەنها ناچالاکەکان</option>
+    </select>
+
+    <div class="status-box">
+      <span class="live-dot"></span>
+      <span id="status">چاوەڕوانی داتا...</span>
+    </div>
+  </section>
+
+  <!-- KPI Cards -->
+  <section class="cards">
+    <!-- Workers -->
+    <div class="card c-workers">
+      <div class="k-header">
+        <span class="k">سەرجەم کارمەندان</span>
+        <span class="card-icon">👥</span>
+      </div>
+      <div class="v" id="kW">0</div>
+      <div class="kpi-sub">تۆمارکراوی سیستم</div>
+    </div>
+
+    <!-- Active -->
+    <div class="card c-on">
+      <div class="k-header">
+        <span class="k">کارمەندی چالاک</span>
+        <span class="card-icon">✅</span>
+      </div>
+      <div class="v g" id="kOn">0</div>
+      <div class="kpi-sub">سەرهێڵ (Online)</div>
+    </div>
+
+    <!-- Inactive -->
+    <div class="card c-off">
+      <div class="k-header">
+        <span class="k">کارمەندی ناچالاک</span>
+        <span class="card-icon">⏸</span>
+      </div>
+      <div class="v r" id="kOff">0</div>
+      <div class="kpi-sub">دابڕاو لە ڕاژە</div>
+    </div>
+
+    <!-- Today -->
+    <div class="card c-today">
+      <div class="k-header">
+        <span class="k">ئەمڕۆ</span>
+        <span class="card-icon">🔥</span>
+      </div>
+      <div class="v r" id="kT">0</div>
+      <div class="kpi-sub">
+        <span>کۆی نرخ:</span>
+        <b id="kTm">0</b>
+      </div>
+    </div>
+
+    <!-- Month Count -->
+    <div class="card c-month">
+      <div class="k-header">
+        <span class="k">کۆی گشتی مانگ</span>
+        <span class="card-icon">📅</span>
+      </div>
+      <div class="v" id="kM">0</div>
+      <div class="kpi-sub">ژمارەی تاسکی مانگ</div>
+    </div>
+
+    <!-- Month Price -->
+    <div class="card c-money">
+      <div class="k-header">
+        <span class="k">کۆی نرخی مانگ</span>
+        <span class="card-icon">💰</span>
+      </div>
+      <div class="v g" id="kMm">0</div>
+      <div class="kpi-sub">کۆی حیساباتی مانگ</div>
+    </div>
+  </section>
+
+  <!-- Workers Table -->
+  <section class="card" style="margin-bottom:22px">
+    <div class="panel-head">
+      <h3>کارمەندان و دۆخی چاودێری ڕاستەوخۆ</h3>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>ناوی کارمەند</th>
+            <th>ناوی تاسک</th>
+            <th>دۆخ</th>
+            <th style="direction:ltr; text-align:left">ئەمڕۆ</th>
+            <th style="direction:ltr; text-align:left">مانگ</th>
+            <th style="direction:ltr; text-align:left">نرخی مانگ</th>
+            <th>دوایین پەیوەندی</th>
+            <th>دۆخی ناردن</th>
+            <th style="text-align:center">سڕینەوە</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2-Column: Task Types & Daily Breakdown -->
+  <div class="g2">
+    <!-- Tasks & Pricing -->
+    <div class="card">
+      <div class="panel-head">
+        <h3>جۆری تاسک و دیاریکردنی نرخ</h3>
+      </div>
+      <div class="scroll" id="tasks"></div>
+    </div>
+
+    <!-- Daily Breakdown -->
+    <div class="card">
+      <div class="panel-head">
+        <h3>ڕۆژانەی مانگ <small style="color:var(--mut); font-weight:normal; font-size:0.82rem">(کلیک لەسەر دێڕ بکە بۆ بینینی وردەکاری)</small></h3>
+      </div>
+      <div class="scroll">
+        <table style="min-width:340px">
+          <thead>
+            <tr>
+              <th>ڕۆژ</th>
+              <th style="direction:ltr; text-align:left">ژمارەی تاسک</th>
+              <th style="direction:ltr; text-align:left">کۆی نرخ</th>
+            </tr>
+          </thead>
+          <tbody id="days"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day Details Table -->
+  <section class="card">
+    <div class="panel-head">
+      <h3 id="dTitle">وردەکاری ڕۆژ</h3>
+    </div>
+    <div class="scroll">
+      <table style="min-width:480px">
+        <thead>
+          <tr>
+            <th>ناوی کارمەند</th>
+            <th>ناوی تاسک</th>
+            <th style="direction:ltr; text-align:left">ژمارە</th>
+            <th style="direction:ltr; text-align:left">کۆی نرخ</th>
+          </tr>
+        </thead>
+        <tbody id="detail"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<div id="mod"></div>
+<div id="pv"></div>
+
 <script>
-const SB_URL="https://zpjtavgezkfugstnymzu.supabase.co",SB_KEY="sb_publishable_Ukx_q5n5wCd7n7K4qWkudg_IXnOoLvd";
-const H={apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json"};
-const $=i=>document.getElementById(i),pad=n=>String(n).padStart(2,"0"),N=x=>Number(x||0).toLocaleString();
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
-let CR=null,started=false,W=[],P={},BW=[],BD=[],TD=[],SD=[],off=0,selDay=ymd(new Date());
-const price=t=>Number(P[t]||0);
-const A=o=>({...CR,...o});
-async function page(path,body){let out=[],o=0;for(;;){const u=SB_URL+"/rest/v1/"+path+(path.includes("?")?"&":"?")+"limit=1000&offset="+o;
- const r=await fetch(u,body!==undefined?{method:"POST",headers:H,body:JSON.stringify(body)}:{headers:H,cache:"no-store"});
- if(!r.ok)throw new Error(path+" HTTP "+r.status+" "+await r.text());const a=await r.json();out=out.concat(a);if(a.length<1000)break;o+=1000}return out}
-async function rpc(n,b){const r=await fetch(SB_URL+"/rest/v1/rpc/"+n,{method:"POST",headers:H,body:JSON.stringify(b||{})});if(!r.ok)throw new Error(n+" HTTP "+r.status+" "+await r.text());return r.json()}
-function range(){const[y,m]=$("month").value.split("-").map(Number);const to=m==12?(y+1)+"-01-01":y+"-"+pad(m+1)+"-01";return{from:y+"-"+pad(m)+"-01",to,days:new Date(y,m,0).getDate(),y,m}}
-const online=p=>p.is_active&&(Date.now()+off-new Date(p.last_seen_at).getTime())<100000;
-async function refresh(){try{
- const R=range(),td=ymd(new Date()),t0=Date.now();
- const [sn,w,pr,bw,bd,tdd]=await Promise.all([rpc("server_now"),page("rpc/dash_workers",A()),page("rpc/dash_prices",A()),page("rpc/month_by_worker",A({p_from:R.from,p_to:R.to})),page("rpc/month_by_day",A({p_from:R.from,p_to:R.to})),page("rpc/day_detail",A({p_date:td}))]);
- off=new Date(sn).getTime()-(t0+Date.now())/2;W=w;P={};pr.forEach(x=>P[x.task_name]=x.price);BW=bw;BD=bd;TD=tdd;
- SD=selDay==td?tdd:await page("rpc/day_detail",A({p_date:selDay}));render();
- $("status").textContent="دوایین نوێکردنەوە: "+new Date().toLocaleTimeString()+" ✔"}catch(e){if(/unauthorized/.test(e.message)){logout();return}$("status").innerHTML='<span class="err">هەڵە: '+esc(e.message)+(/PGRST20|404/.test(e.message)?" — supabase_full.sql Run بکە":"")+'</span>'}}
-function render(){
- const R=range(),mc={},mm={},tc={};
- BW.forEach(x=>{mc[x.rid]=(mc[x.rid]||0)+x.total;mm[x.rid]=(mm[x.rid]||0)+x.total*price(x.task_name)});
- TD.forEach(x=>tc[x.rid]=(tc[x.rid]||0)+x.count);
- const on=W.filter(online),tS=TD.reduce((s,x)=>s+x.count,0),tM=TD.reduce((s,x)=>s+x.count*price(x.task_name),0);
- const mS=BD.reduce((s,x)=>s+x.total,0),mM=BD.reduce((s,x)=>s+x.total*price(x.task_name),0);
- $("kW").textContent=N(W.length);$("kOn").textContent=N(on.length);$("kOff").textContent=N(W.length-on.length);
- $("kT").textContent=N(tS);$("kTm").textContent=N(tM);$("kM").textContent=N(mS);$("kMm").textContent=N(mM);
- const q=$("search").value.trim().toLowerCase(),f=$("filter").value;
- const sh=W.filter(p=>(!q||(p.person_name+" "+p.task_name).toLowerCase().includes(q))&&(f=="all"||(f=="on")==online(p)));
- $("rows").innerHTML=sh.map(p=>{const o=online(p);return`<tr><td><b>${esc(p.person_name)}</b></td><td>${esc(p.task_name)}</td><td><span class="pill ${o?"on":"off"}">${o?"چالاک":"ناچالاک"}</span></td><td class="big">${N(tc[p.rid])}</td><td>${N(mc[p.rid])}</td><td>${N(mm[p.rid])}</td><td><small>${new Date(p.last_seen_at).toLocaleString()}</small></td><td><small class="${p.last_send_error?"err":""}">${esc(p.last_send_error||p.last_send_status||"—")}</small></td><td><button class="del" data-rid="${esc(p.rid)}" data-n="${esc(p.person_name)}">🗑</button></td></tr>`}).join("")||'<tr><td colspan="9">هیچ کارمەندێک نییە</td></tr>';
- document.querySelectorAll(".del").forEach(b=>b.onclick=()=>delFlow(b.dataset.rid,b.dataset.n));
- if(!$("tasks").contains(document.activeElement)){
-  const names=[...new Set([...W.map(x=>x.task_name),...BW.map(x=>x.task_name),...BD.map(x=>x.task_name),...Object.keys(P)])].sort(),tm={};
-  BD.forEach(x=>tm[x.task_name]=(tm[x.task_name]||0)+x.total);
-  $("tasks").innerHTML='<table style="min-width:420px"><thead><tr><th>ناوی تاسک</th><th>نرخ (بۆ هەر یەک)</th><th>مانگ</th><th></th></tr></thead><tbody>'+names.map(n=>`<tr><td><input value="${esc(n)}" data-old="${esc(n)}" class="tn"></td><td><input type="number" min="0" step="any" value="${price(n)}" class="tp"></td><td>${N(tm[n])}</td><td><button class="tsv pri">پاشەکەوت</button></td></tr>`).join("")+"</tbody></table>";
-  document.querySelectorAll(".tsv").forEach(b=>b.onclick=()=>saveTask(b.closest("tr")))}
- const dm={};BD.forEach(x=>{const d=dm[x.task_date]||(dm[x.task_date]={c:0,m:0});d.c+=x.total;d.m+=x.total*price(x.task_name)});
- let h="";for(let i=1;i<=R.days;i++){const d=R.y+"-"+pad(R.m)+"-"+pad(i),x=dm[d]||{c:0,m:0};h+=`<tr class="clk ${d==selDay?"sel":""}" data-d="${d}"><td>${d}</td><td class="big">${N(x.c)}</td><td>${N(x.m)}</td></tr>`}
- $("days").innerHTML=h+`<tr><td><b>کۆی مانگ</b></td><td class="big">${N(mS)}</td><td><b>${N(mM)}</b></td></tr>`;
- document.querySelectorAll("tr.clk").forEach(r=>r.onclick=()=>{selDay=r.dataset.d;refresh()});
- const nm=Object.fromEntries(W.map(x=>[x.rid,x.person_name]));$("dTitle").textContent="وردەکاری ڕۆژی "+selDay;
- $("detail").innerHTML=SD.map(x=>`<tr><td>${esc(nm[x.rid]||x.rid)}</td><td>${esc(x.task_name)}</td><td class="big">${N(x.count)}</td><td>${N(x.count*price(x.task_name))}</td></tr>`).join("")||'<tr><td colspan="4">هیچ داتایەک نییە</td></tr>'}
-function modal(html){$("mod").innerHTML='<div class="ov"><div class="md">'+html+"</div></div>"}const close=()=>$("mod").innerHTML="";
-async function admin(fn,args){try{const r=await rpc(fn,A(args));if(!r.ok){alert(r.error);return null}return r}catch(e){alert(e.message);return null}}
-function delFlow(rid,n){modal(`<h2>🗑 سڕینەوەی کارمەند</h2><p>دەتەوێت «<b>${esc(n)}</b>» بسڕیتەوە؟</p><div class="row"><button id="c">نەخێر</button><button class="pri" id="y">بەڵێ، بەردەوام بە</button></div>`);
- $("c").onclick=close;$("y").onclick=()=>{modal(`<h2>⚠ فۆرمی کۆتایی</h2><p>هەموو داتای «<b>${esc(n)}</b>» (ژمارە و مێژوو) بۆ هەمیشە دەسڕدرێتەوە و ناگەڕێتەوە.</p><div class="row"><button id="c2">پاشگەزبوونەوە</button><button class="pri" id="y2">سڕینەوەی یەکجاری</button></div>`);
-  $("c2").onclick=close;$("y2").onclick=async()=>{close();if(await admin("delete_worker",{p_rid:rid}))refresh()}}}
-async function saveTask(tr){const old=tr.querySelector(".tn").dataset.old,nn=tr.querySelector(".tn").value.trim(),pr=tr.querySelector(".tp").value;let name=old;
- if(nn&&nn!=old){if(!confirm("ناوی «"+old+"» بگۆڕدرێت بۆ «"+nn+"»؟ هەموو داتا کۆنەکانیش دەگۆڕێت."))return;if(!await admin("rename_task",{p_old:old,p_new:nn}))return;name=nn}
- if(await admin("set_task_price",{p_task:name,p_price:Number(pr||0)}))refresh()}
-$("csv").onclick=async()=>{const R=range();const rows=await page("rpc/month_rows",A({p_from:R.from,p_to:R.to}));
- const nm=Object.fromEntries(W.map(x=>[x.rid,x.person_name])),q=s=>'"'+String(s).replace(/"/g,'""')+'"';
- const t="\ufeffdate,worker,task,count,price,total\n"+rows.map(x=>[x.task_date,q(nm[x.rid]||x.rid),q(x.task_name),x.count,price(x.task_name),x.count*price(x.task_name)].join(",")).join("\n");
- const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/csv"}));a.download="report-"+$("month").value+".csv";a.click()};
-const shiftM=d=>{const[y,m]=$("month").value.split("-").map(Number),x=new Date(y,m-1+d,1);$("month").value=x.getFullYear()+"-"+pad(x.getMonth()+1);selDay=ymd(x)==ymd(new Date(new Date().getFullYear(),new Date().getMonth(),1))?ymd(new Date()):ymd(x);refresh()};
-$("prev").onclick=()=>shiftM(-1);$("next").onclick=()=>shiftM(1);$("month").onchange=()=>{selDay=$("month").value+"-01";refresh()};
-const setTheme=t=>{document.documentElement.dataset.theme=t;try{localStorage.setItem("th",t)}catch(e){}};
-try{setTheme(localStorage.getItem("th")||"light")}catch(e){}
-$("theme").onclick=()=>setTheme(document.documentElement.dataset.theme=="dark"?"light":"dark");
-$("refresh").onclick=refresh;$("search").oninput=render;$("filter").onchange=render;
-$("month").value=ymd(new Date()).slice(0,7);
-function start(){$("login").style.display="none";$("app").style.display="block";refresh();if(!started){started=true;setInterval(()=>{if(CR&&!document.hidden&&!$("mod").innerHTML)refresh()},10000)}}
-function logout(){CR=null;try{sessionStorage.removeItem("cr")}catch(e){}$("app").style.display="none";$("login").style.display="flex";$("lp").value=""}
-async function login(u,p,silent){try{if(await rpc("dash_login",{p_user:u,p_pass:p})===true){CR={p_user:u,p_pass:p};try{sessionStorage.setItem("cr",JSON.stringify(CR))}catch(e){}start();return}
- if(!silent)$("lerr").textContent="بەکارهێنەر یان وشەی نهێنی هەڵەیە"}catch(e){if(!silent)$("lerr").textContent="هەڵە: "+e.message+" — supabase_full.sql ت Run کردووە؟"}}
-$("lgo").onclick=()=>login($("lu").value.trim(),$("lp").value);$("lp").onkeydown=e=>{if(e.key=="Enter")$("lgo").click()};$("lu").onkeydown=e=>{if(e.key=="Enter")$("lp").focus()};
-$("out").onclick=logout;
-try{const c=JSON.parse(sessionStorage.getItem("cr")||"null");if(c)login(c.p_user,c.p_pass,true)}catch(e){}
-</script></body></html>
+const SB_URL = "https://zpjtavgezkfugstnymzu.supabase.co";
+const SB_KEY = "sb_publishable_Ukx_q5n5wCd7n7K4qWkudg_IXnOoLvd";
+const H = {
+  apikey: SB_KEY,
+  Authorization: "Bearer " + SB_KEY,
+  "Content-Type": "application/json"
+};
+
+const $ = i => document.getElementById(i);
+const pad = n => String(n).padStart(2, "0");
+const N = x => Number(x || 0).toLocaleString();
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;"
+}[c]));
+const ymd = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+
+let CR = null, started = false, W = [], P = {}, BW = [], BD = [], TD = [], SD = [], off = 0, selDay = ymd(new Date());
+const price = t => Number(P[t] || 0);
+const A = o => ({ ...CR, ...o });
+
+async function page(path, body) {
+  let out = [], o = 0;
+  for (;;) {
+    const u = SB_URL + "/rest/v1/" + path + (path.includes("?") ? "&" : "?") + "limit=1000&offset=" + o;
+    const r = await fetch(u, body !== undefined 
+      ? { method: "POST", headers: H, body: JSON.stringify(body) } 
+      : { headers: H, cache: "no-store" });
+    if (!r.ok) throw new Error(path + " HTTP " + r.status + " " + await r.text());
+    const a = await r.json();
+    out = out.concat(a);
+    if (a.length < 1000) break;
+    o += 1000;
+  }
+  return out;
+}
+
+async function rpc(n, b) {
+  const r = await fetch(SB_URL + "/rest/v1/rpc/" + n, {
+    method: "POST",
+    headers: H,
+    body: JSON.stringify(b || {})
+  });
+  if (!r.ok) throw new Error(n + " HTTP " + r.status + " " + await r.text());
+  return r.json();
+}
+
+function range() {
+  const [y, m] = $("month").value.split("-").map(Number);
+  const to = m == 12 ? (y + 1) + "-01-01" : y + "-" + pad(m + 1) + "-01";
+  return { from: y + "-" + pad(m) + "-01", to, days: new Date(y, m, 0).getDate(), y, m };
+}
+
+const online = p => p.is_active && (Date.now() + off - new Date(p.last_seen_at).getTime()) < 100000;
+
+async function refresh() {
+  try {
+    const R = range(), td = ymd(new Date()), t0 = Date.now();
+    const [sn, w, pr, bw, bd, tdd] = await Promise.all([
+      rpc("server_now"),
+      page("rpc/dash_workers", A()),
+      page("rpc/dash_prices", A()),
+      page("rpc/month_by_worker", A({ p_from: R.from, p_to: R.to })),
+      page("rpc/month_by_day", A({ p_from: R.from, p_to: R.to })),
+      page("rpc/day_detail", A({ p_date: td }))
+    ]);
+
+    off = new Date(sn).getTime() - (t0 + Date.now()) / 2;
+    W = w;
+    P = {};
+    pr.forEach(x => P[x.task_name] = x.price);
+    BW = bw;
+    BD = bd;
+    TD = tdd;
+    SD = selDay == td ? tdd : await page("rpc/day_detail", A({ p_date: selDay }));
+    
+    render();
+    $("status").textContent = "نوێکرایەوە: " + new Date().toLocaleTimeString() + " ✔";
+  } catch (e) {
+    if (/unauthorized/.test(e.message)) {
+      logout();
+      return;
+    }
+    $("status").innerHTML = '<span class="err">هەڵە: ' + esc(e.message) + (/PGRST20|404/.test(e.message) ? " — تکایە supabase_full.sql Run بکە" : "") + '</span>';
+  }
+}
+
+function render() {
+  const R = range(), mc = {}, mm = {}, tc = {};
+  BW.forEach(x => {
+    mc[x.rid] = (mc[x.rid] || 0) + x.total;
+    mm[x.rid] = (mm[x.rid] || 0) + x.total * price(x.task_name);
+  });
+  TD.forEach(x => tc[x.rid] = (tc[x.rid] || 0) + x.count);
+
+  const on = W.filter(online);
+  const tS = TD.reduce((s, x) => s + x.count, 0);
+  const tM = TD.reduce((s, x) => s + x.count * price(x.task_name), 0);
+  const mS = BD.reduce((s, x) => s + x.total, 0);
+  const mM = BD.reduce((s, x) => s + x.total * price(x.task_name), 0);
+
+  $("kW").textContent = N(W.length);
+  $("kOn").textContent = N(on.length);
+  $("kOff").textContent = N(W.length - on.length);
+  $("kT").textContent = N(tS);
+  $("kTm").textContent = N(tM);
+  $("kM").textContent = N(mS);
+  $("kMm").textContent = N(mM);
+
+  const q = $("search").value.trim().toLowerCase(), f = $("filter").value;
+  const sh = W.filter(p => (!q || (p.person_name + " " + p.task_name).toLowerCase().includes(q)) && (f == "all" || (f == "on") == online(p)));
+
+  $("rows").innerHTML = sh.map(p => {
+    const o = online(p);
+    return `<tr>
+      <td><b>${esc(p.person_name)}</b></td>
+      <td>
+        <span class="te" data-t="${esc(p.task_name)}" title="دەستکاری تاسک">
+          ${esc(p.task_name)} ✎
+        </span>
+      </td>
+      <td><span class="pill ${o ? "on" : "off"}">${o ? "چالاک" : "ناچالاک"}</span></td>
+      <td class="big" style="direction:ltr; text-align:left; color:var(--red)">${N(tc[p.rid])}</td>
+      <td style="direction:ltr; text-align:left; font-weight:700">${N(mc[p.rid])}</td>
+      <td style="direction:ltr; text-align:left; font-weight:800; color:var(--ok)">${N(mm[p.rid])}</td>
+      <td><small style="color:var(--mut)">${new Date(p.last_seen_at).toLocaleString()}</small></td>
+      <td><small class="${p.last_send_error ? "err" : ""}">${esc(p.last_send_error || p.last_send_status || "—")}</small></td>
+      <td style="text-align:center">
+        <button class="del" data-rid="${esc(p.rid)}" data-n="${esc(p.person_name)}">🗑 سڕینەوە</button>
+      </td>
+    </tr>`;
+  }).join("") || '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--mut);">هیچ کارمەندێک نییە</td></tr>';
+
+  document.querySelectorAll(".del").forEach(b => b.onclick = () => delFlow(b.dataset.rid, b.dataset.n));
+
+  if (!$("tasks").contains(document.activeElement)) {
+    const names = [...new Set([...W.map(x => x.task_name), ...BW.map(x => x.task_name), ...BD.map(x => x.task_name), ...Object.keys(P)])].sort();
+    const tm = {};
+    BD.forEach(x => tm[x.task_name] = (tm[x.task_name] || 0) + x.total);
+
+    $("tasks").innerHTML = '<table style="min-width:420px"><thead><tr><th>ناوی تاسک</th><th>نرخ (بۆ هەر یەک)</th><th>کۆی مانگ</th><th style="text-align:center">کردار</th></tr></thead><tbody>' +
+      names.map(n => `<tr>
+        <td><input value="${esc(n)}" data-old="${esc(n)}" class="tn" style="font-weight:700"></td>
+        <td><input type="number" min="0" step="any" value="${price(n)}" class="tp"></td>
+        <td style="direction:ltr; text-align:left; font-weight:800">${N(tm[n])}</td>
+        <td style="text-align:center"><button class="tsv pri" style="padding:6px 14px">پاشەکەوت</button></td>
+      </tr>`).join("") + "</tbody></table>";
+
+    document.querySelectorAll(".tsv").forEach(b => b.onclick = () => saveTask(b.closest("tr")));
+  }
+
+  const dm = {};
+  BD.forEach(x => {
+    const d = dm[x.task_date] || (dm[x.task_date] = { c: 0, m: 0 });
+    d.c += x.total;
+    d.m += x.total * price(x.task_name);
+  });
+
+  let h = "";
+  for (let i = 1; i <= R.days; i++) {
+    const d = R.y + "-" + pad(R.m) + "-" + pad(i), x = dm[d] || { c: 0, m: 0 };
+    h += `<tr class="clk ${d == selDay ? "sel" : ""}" data-d="${d}">
+      <td>${d}</td>
+      <td class="big" style="direction:ltr; text-align:left; color:var(--red)">${N(x.c)}</td>
+      <td style="direction:ltr; text-align:left; font-weight:800; color:var(--ok)">${N(x.m)}</td>
+    </tr>`;
+  }
+  
+  $("days").innerHTML = h + `<tr class="total-row">
+    <td><b>کۆی گشتی مانگ</b></td>
+    <td class="big" style="direction:ltr; text-align:left; color:var(--red)">${N(mS)}</td>
+    <td style="direction:ltr; text-align:left; font-weight:800; color:var(--ok)">${N(mM)}</td>
+  </tr>`;
+
+  document.querySelectorAll("tr.clk").forEach(r => r.onclick = () => {
+    selDay = r.dataset.d;
+    refresh();
+  });
+
+  const nm = Object.fromEntries(W.map(x => [x.rid, x.person_name]));
+  $("dTitle").textContent = "وردەکاری ڕۆژی " + selDay;
+
+  $("detail").innerHTML = SD.map(x => `<tr>
+    <td><b>${esc(nm[x.rid] || x.rid)}</b></td>
+    <td>
+      <span class="te" data-t="${esc(x.task_name)}" title="دەستکاری تاسک">
+        ${esc(x.task_name)} ✎
+      </span>
+    </td>
+    <td class="big" style="direction:ltr; text-align:left; color:var(--red)">${N(x.count)}</td>
+    <td style="direction:ltr; text-align:left; font-weight:800; color:var(--ok)">${N(x.count * price(x.task_name))}</td>
+  </tr>`).join("") || '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--mut);">هیچ داتایەک نییە</td></tr>';
+}
+
+function modal(html) {
+  $("mod").innerHTML = '<div class="ov"><div class="md">' + html + '</div></div>';
+}
+
+const close = () => $("mod").innerHTML = "";
+
+async function admin(fn, args) {
+  try {
+    const r = await rpc(fn, A(args));
+    if (r && r.ok === false) {
+      alert(r.error || "هەڵەیەک ڕوویدا");
+      return null;
+    }
+    return r;
+  } catch (e) {
+    alert(e.message);
+    return null;
+  }
+}
+
+function delFlow(rid, n) {
+  modal(`
+    <div style="font-size:2rem; margin-bottom:8px;">🗑</div>
+    <h2>سڕینەوەی کارمەند</h2>
+    <p>دەتەوێت کارمەند «<b>${esc(n)}</b>» بسڕیتەوە؟</p>
+    <div class="row">
+      <button id="c" style="background:var(--inp)">نەخێر</button>
+      <button class="pri" id="y">بەڵێ، بەردەوام بە</button>
+    </div>
+  `);
+
+  $("c").onclick = close;
+  $("y").onclick = () => {
+    modal(`
+      <div style="font-size:2rem; margin-bottom:8px; color:var(--red);">⚠️</div>
+      <h2 style="color:var(--red)">ئاگاداری کۆتایی</h2>
+      <p>هەموو داتای کارمەند «<b>${esc(n)}</b>» (ژمارە و مێژوو) بۆ هەمیشە دەسڕدرێتەوە و ناگەڕێتەوە.</p>
+      <div class="row">
+        <button id="c2" style="background:var(--inp)">پاشگەزبوونەوە</button>
+        <button class="pri" id="y2" style="background:var(--red)!important">سڕینەوەی یەکجاری</button>
+      </div>
+    `);
+
+    $("c2").onclick = close;
+    $("y2").onclick = async () => {
+      close();
+      if (await admin("delete_worker", { p_rid: rid })) refresh();
+    };
+  };
+}
+
+async function saveTask(tr) {
+  const old = tr.querySelector(".tn").dataset.old;
+  const nn = tr.querySelector(".tn").value.trim();
+  const pr = tr.querySelector(".tp").value;
+  let name = old;
+
+  if (nn && nn != old) {
+    if (!confirm("ناوی «" + old + "» بگۆڕدرێت بۆ «" + nn + "»؟ هەموو داتا کۆنەکانیش دەگۆڕێت.")) return;
+    if (!await admin("rename_task", { p_old: old, p_new: nn })) return;
+    name = nn;
+  }
+  if (await admin("set_task_price", { p_task: name, p_price: Number(pr || 0) })) {
+    refresh();
+  }
+}
+
+$("csv").onclick = async () => {
+  const R = range();
+  const rows = await page("rpc/month_rows", A({ p_from: R.from, p_to: R.to }));
+  const nm = Object.fromEntries(W.map(x => [x.rid, x.person_name])), q = s => '"' + String(s).replace(/"/g, '""') + '"';
+  const t = "\ufeffdate,worker,task,count,price,total\n" + rows.map(x => [
+    x.task_date,
+    q(nm[x.rid] || x.rid),
+    q(x.task_name),
+    x.count,
+    price(x.task_name),
+    x.count * price(x.task_name)
+  ].join(",")).join("\n");
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([t], { type: "text/csv;charset=utf-8;" }));
+  a.download = "report-" + $("month").value + ".csv";
+  a.click();
+};
+
+$("pdf").onclick = async () => {
+  const R = range();
+  $("status").textContent = "ئامادەکردنی ڕاپۆرت...";
+  const rows = await page("rpc/month_rows", A({ p_from: R.from, p_to: R.to }));
+  const nm = Object.fromEntries(W.map(x => [x.rid, x.person_name])), g = {};
+
+  rows.forEach(x => {
+    const w = g[x.rid] || (g[x.rid] = { name: nm[x.rid] || x.rid, list: [], tasks: {} });
+    const c = Number(x.count || 0), pr = price(x.task_name);
+    w.list.push({ d: x.task_date, t: x.task_name, c, pr, m: c * pr });
+    const k = w.tasks[x.task_name] || (w.tasks[x.task_name] = { c: 0, pr, m: 0 });
+    k.c += c;
+    k.m += c * pr;
+  });
+
+  const ws = Object.values(g).sort((a, b) => a.name.localeCompare(b.name, "ckb"));
+  ws.forEach(w => w.list.sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : a.t.localeCompare(b.t)));
+
+  const mon = $("month").value;
+  const hd = t => `
+    <div class="ph">
+      <div>
+        <h2>${esc(t)}</h2>
+        <div class="pm">مانگی ${esc(mon)}</div>
+      </div>
+      <b>KHUNAW-ABDULKHALQ-AKAM</b>
+    </div>
+  `;
+
+  const sum = () => {
+    let tc = 0, tm = 0, i = 0, b = "";
+    ws.forEach(w => Object.entries(w.tasks).sort().forEach(([t, k], j) => {
+      i += j == 0 ? 1 : 0;
+      tc += k.c;
+      tm += k.m;
+      b += `<tr>
+        <td class="n">${j == 0 ? i : ""}</td>
+        <td>${j == 0 ? "<b>" + esc(w.name) + "</b>" : ""}</td>
+        <td>${esc(t)}</td>
+        <td class="n">${N(k.c)}</td>
+        <td class="n">${N(k.pr)}</td>
+        <td class="n">${N(k.m)}</td>
+      </tr>`;
+    }));
+
+    return `<div class="pg">
+      ${hd("ڕاپۆرتی کارمەندان")}
+      <table>
+        <thead>
+          <tr>
+            <th class="n">#</th>
+            <th>ناو</th>
+            <th>تاسک</th>
+            <th class="n">ژمارە</th>
+            <th class="n">نرخ</th>
+            <th class="n">کۆ</th>
+          </tr>
+        </thead>
+        <tbody>${b || '<tr><td colspan="6" style="text-align:center;">هیچ داتایەک نییە</td></tr>'}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">کۆی گشتی</td>
+            <td class="n">${N(tc)}</td>
+            <td></td>
+            <td class="n">${N(tm)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+  };
+
+  const per = () => ws.map(w => {
+    const tc = w.list.reduce((s, x) => s + x.c, 0);
+    const tm = w.list.reduce((s, x) => s + x.m, 0);
+    return `<div class="pg">
+      ${hd(w.name)}
+      <table>
+        <thead>
+          <tr>
+            <th>بەروار</th>
+            <th>تاسک</th>
+            <th class="n">ژمارە</th>
+            <th class="n">نرخ</th>
+            <th class="n">کۆ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${w.list.map(x => `<tr>
+            <td>${esc(x.d)}</td>
+            <td>${esc(x.t)}</td>
+            <td class="n">${N(x.c)}</td>
+            <td class="n">${N(x.pr)}</td>
+            <td class="n">${N(x.m)}</td>
+          </tr>`).join("")}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2">کۆی مانگ</td>
+            <td class="n">${N(tc)}</td>
+            <td></td>
+            <td class="n">${N(tm)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+  }).join("");
+
+  const show = m => {
+    $("pv").innerHTML = `
+      <div class="pv">
+        <div class="pvb">
+          <button class="pri" id="pp">🖨 چاپ / Save as PDF</button>
+          <button id="m1" class="${m == 1 ? 'pri' : ''}">کۆی گشتی</button>
+          <button id="m2" class="${m == 2 ? 'pri' : ''}">پەڕەیەک بۆ هەر کارمەندێک</button>
+          <button id="pc">✕ داخستن</button>
+        </div>
+        ${m == 1 ? sum() : per()}
+      </div>
+    `;
+
+    $("pp").onclick = () => window.print();
+    $("m1").onclick = () => show(1);
+    $("m2").onclick = () => show(2);
+    $("pc").onclick = () => $("pv").innerHTML = "";
+  };
+
+  show(1);
+  $("status").textContent = "ڕاپۆرت ئامادەیە ✔";
+};
+
+function editTask(old) {
+  modal(`
+    <div style="font-size:1.8rem; margin-bottom:6px;">✎</div>
+    <h2>دەستکاری تاسک</h2>
+    <p class="mut">ناوی نوێ هەموو داتا و ڕاپۆرتەکانی «<b>${esc(old)}</b>» دەگۆڕێت.</p>
+    <label>ناوی تاسک</label>
+    <input id="en" value="${esc(old)}">
+    <label>نرخ (بۆ هەر یەک دانە)</label>
+    <input id="ep" type="number" min="0" step="any" value="${price(old)}">
+    <div class="row">
+      <button id="ec" style="background:var(--inp)">پاشگەزبوونەوە</button>
+      <button class="pri" id="es">پاشەکەوت</button>
+    </div>
+  `);
+
+  $("en").focus();
+  $("ec").onclick = close;
+  $("es").onclick = async () => {
+    const nn = $("en").value.trim(), pr = Number($("ep").value || 0);
+    if (!nn) return;
+    close();
+    let name = old;
+    if (nn != old) {
+      if (!await admin("rename_task", { p_old: old, p_new: nn })) return;
+      name = nn;
+    }
+    if (await admin("set_task_price", { p_task: name, p_price: pr })) refresh();
+  };
+}
+
+document.addEventListener("click", e => {
+  const t = e.target.closest(".te");
+  if (t) editTask(t.dataset.t);
+});
+
+const shiftM = d => {
+  const [y, m] = $("month").value.split("-").map(Number);
+  const x = new Date(y, m - 1 + d, 1);
+  $("month").value = x.getFullYear() + "-" + pad(x.getMonth() + 1);
+  selDay = ymd(x) == ymd(new Date(new Date().getFullYear(), new Date().getMonth(), 1)) ? ymd(new Date()) : ymd(x);
+  refresh();
+};
+
+$("prev").onclick = () => shiftM(-1);
+$("next").onclick = () => shiftM(1);
+$("month").onchange = () => {
+  selDay = $("month").value + "-01";
+  refresh();
+};
+
+const setTheme = t => {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("th", t); } catch (e) {}
+};
+
+try { setTheme(localStorage.getItem("th") || "light"); } catch (e) {}
+
+$("theme").onclick = () => setTheme(document.documentElement.dataset.theme == "dark" ? "light" : "dark");
+$("refresh").onclick = refresh;
+$("search").oninput = render;
+$("filter").onchange = render;
+$("month").value = ymd(new Date()).slice(0, 7);
+
+function start() {
+  $("login").style.display = "none";
+  $("app").style.display = "block";
+  refresh();
+  if (!started) {
+    started = true;
+    setInterval(() => {
+      if (CR && !document.hidden && !$("mod").innerHTML) refresh();
+    }, 10000);
+  }
+}
+
+function logout() {
+  CR = null;
+  try { sessionStorage.removeItem("cr"); } catch (e) {}
+  $("app").style.display = "none";
+  $("login").style.display = "flex";
+  $("lp").value = "";
+}
+
+async function login(u, p, silent) {
+  try {
+    if (await rpc("dash_login", { p_user: u, p_pass: p }) === true) {
+      CR = { p_user: u, p_pass: p };
+      try { sessionStorage.setItem("cr", JSON.stringify(CR)); } catch (e) {}
+      start();
+      return;
+    }
+    if (!silent) $("lerr").textContent = "بەکارهێنەر یان وشەی نهێنی هەڵەیە";
+  } catch (e) {
+    if (!silent) $("lerr").textContent = "هەڵە: " + e.message + " — supabase_full.sql ت Run کردووە؟";
+  }
+}
+
+$("lgo").onclick = () => login($("lu").value.trim(), $("lp").value);
+$("lp").onkeydown = e => { if (e.key == "Enter") $("lgo").click(); };
+$("lu").onkeydown = e => { if (e.key == "Enter") $("lp").focus(); };
+$("out").onclick = logout;
+
+try {
+  const c = JSON.parse(sessionStorage.getItem("cr") || "null");
+  if (c) login(c.p_user, c.p_pass, true);
+} catch (e) {}
+</script>
+</body>
+</html>
