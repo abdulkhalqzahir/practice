@@ -2,6 +2,7 @@
 --  KHUNAW-ABDULKHALQ-AKAM — Supabase SETUP (تەواو، یەک فایل)
 --  تەنها ئەم فایلە لە SQL Editor دا بە تەواوی Run بکە (دەتوانیت چەند جارێک Run ی بکەیت).
 --  لۆگینی داشبۆرد:  بەکارهێنەر = khunav   |   وشەی نهێنی = khunav@123
+--  نوێ: rename_worker_task — گۆڕینی ناوی تاسک تەنها بۆ یەک کارمەند
 -- ============================================================
 
 -- ---------- خشتەکان ----------
@@ -30,6 +31,15 @@ create table if not exists public.task_prices  (task_name text primary key, pric
 create table if not exists public.task_aliases (old_name text primary key, new_name text not null);
 create table if not exists public.app_settings (key text primary key, value text not null);
 
+-- نوێ: ناوی تاسکی تایبەت بە هەر کارمەندێک (ئەگەر سکریپتەکەی هێشتا ناوە کۆنەکە بنێرێت، سێرڤەر دەیگۆڕێت بۆ ناوە نوێیەکە تەنها بۆ ئەو کەسە)
+create table if not exists public.worker_task_aliases (
+  rid text not null references public.workers(rid) on delete cascade,
+  old_name text not null,
+  new_name text not null,
+  primary key (rid, old_name)
+);
+
+alter table public.workers add column if not exists shift smallint;
 alter table public.workers add column if not exists last_seq bigint not null default 0;   -- ژمارەی دوایین Shift+Enter ی وەرگیراو (بۆ ڕێگری لە دووبارەبوونەوە)
 create index if not exists workers_last_seen_idx on public.workers(last_seen_at desc);
 create index if not exists daily_task_counts_date_idx on public.daily_task_counts(task_date desc);
@@ -45,11 +55,12 @@ alter table public.workers enable row level security;
 alter table public.daily_task_counts enable row level security;
 alter table public.task_prices enable row level security;
 alter table public.task_aliases enable row level security;
+alter table public.worker_task_aliases enable row level security;
 alter table public.app_settings enable row level security;
 drop policy if exists "public read workers" on public.workers;
 drop policy if exists "public read daily counts" on public.daily_task_counts;
 drop policy if exists "read prices" on public.task_prices;
-revoke all on public.workers, public.daily_task_counts, public.task_prices, public.task_aliases, public.app_settings from anon, authenticated;
+revoke all on public.workers, public.daily_task_counts, public.task_prices, public.task_aliases, public.worker_task_aliases, public.app_settings from anon, authenticated;
 grant usage on schema public to anon;
 
 -- ---------- لابردنی فەنکشنە کۆنەکان (ئەوانەی بێ وشەی نهێنی بوون) ----------
@@ -60,6 +71,8 @@ drop function if exists public.set_task_price(text, text, numeric);
 drop function if exists public.rename_task(text, text);
 drop function if exists public.rename_task(text, text, text);
 drop function if exists public.admin_login(text);
+drop function if exists public.register_worker(text, text, text);
+drop function if exists public.dash_workers(text, text);
 drop function if exists public.month_by_worker(date, date);
 drop function if exists public.month_by_day(date, date);
 drop function if exists public.day_detail(date);
@@ -68,20 +81,18 @@ drop function if exists public.day_detail(date);
 create or replace function public.resolve_task(t text) returns text language sql stable as $$
   select coalesce((select new_name from public.task_aliases where old_name = t), t) $$;
 
-create or replace function public.register_worker(p_rid text, p_person_name text, p_task_name text)
-returns jsonb language plpgsql security definer set search_path = public as $$
-declare v text := resolve_task(p_task_name);
-begin
-  insert into workers(rid, person_name, task_name, registered_at, last_seen_at, is_active, closed_at, last_send_status, last_send_error)
-  values (p_rid, p_person_name, v, now(), now(), true, null, 'Registered', null)
-  on conflict (rid) do update set person_name = excluded.person_name, task_name = excluded.task_name,
-    last_seen_at = now(), is_active = true, closed_at = null, last_send_status = 'Registered', last_send_error = null;
-  return jsonb_build_object('ok', true, 'rid', p_rid, 'server_time', now());
-end $$;
+-- نوێ: یەکەم ناوی تایبەت بە کارمەند، پاشان ناوی گشتی، پاشان خودی ناوەکە
+create or replace function public.resolve_task(p_rid text, t text) returns text
+language sql stable security definer set search_path = public as $$
+  select coalesce(
+    (select new_name from public.worker_task_aliases where rid = p_rid and old_name = t),
+    (select new_name from public.task_aliases where old_name = t),
+    t) $$;
+
 
 create or replace function public.record_shifts(p_rid text, p_task_name text, p_n int, p_date date)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare v_count bigint; v text := resolve_task(p_task_name);
+declare v_count bigint; v text := resolve_task(p_rid, p_task_name);
 begin
   if p_n is null or p_n < 1 or p_n > 100000 then return jsonb_build_object('ok', false, 'error', 'Invalid count'); end if;
   update workers set last_seen_at = now(), is_active = true, closed_at = null, last_send_at = now(),
@@ -105,7 +116,7 @@ begin
   select last_seq into v_last from workers where rid = p_rid for update;   -- دوو داواکاری هاوکات ڕیز دەکرێن
   if not found then return jsonb_build_object('ok', false, 'error', 'Worker is not registered'); end if;
   with ev as (
-    select (e->>'s')::bigint as s, (e->>'d')::date as d, resolve_task(e->>'t') as t
+    select (e->>'s')::bigint as s, (e->>'d')::date as d, resolve_task(p_rid, e->>'t') as t
     from jsonb_array_elements(p_events) e
   ), nw as (select s, d, t from ev where s > v_last),
   agg as (select d, t, count(*)::bigint as c from nw group by d, t),
@@ -170,15 +181,6 @@ language sql stable security definer set search_path = public as $$ select publi
 
 create or replace function public.server_now() returns timestamptz language sql stable as $$ select now() $$;
 
-create or replace function public.dash_workers(p_user text, p_pass text)
-returns table(rid text, person_name text, task_name text, last_seen_at timestamptz, is_active boolean,
-              last_send_at timestamptz, last_send_status text, last_send_error text)
-language plpgsql stable security definer set search_path = public as $$
-begin
-  if not dash_ok(p_user, p_pass) then raise exception 'unauthorized'; end if;
-  return query select w.rid, w.person_name, w.task_name, w.last_seen_at, w.is_active,
-                      w.last_send_at, w.last_send_status, w.last_send_error from workers w order by w.rid;
-end $$;
 
 create or replace function public.dash_prices(p_user text, p_pass text)
 returns table(task_name text, price numeric)
@@ -241,6 +243,7 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 
+-- گۆڕینی ناوی تاسک بۆ هەموو کارمەندان (کۆن — هێشتاش ماوە)
 create or replace function public.rename_task(p_user text, p_pass text, p_old text, p_new text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 begin
@@ -259,15 +262,92 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 
+-- نوێ: گۆڕینی ناوی تاسک تەنها بۆ یەک کارمەند (p_rid). کەسانی تر ناگۆڕێن.
+create or replace function public.rename_worker_task(p_user text, p_pass text, p_rid text, p_old text, p_new text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  if not dash_ok(p_user, p_pass) then raise exception 'unauthorized'; end if;
+  p_new := btrim(p_new);
+  if p_new = '' or p_new = p_old then return jsonb_build_object('ok', false, 'error', 'Invalid name'); end if;
+  if not exists (select 1 from workers where rid = p_rid) then
+    return jsonb_build_object('ok', false, 'error', 'Worker not found');
+  end if;
+
+  -- ژمارە و مێژووی ئەم کارمەندە بۆ ناوە نوێیەکە دەگوازرێتەوە
+  insert into daily_task_counts(rid, task_date, task_name, count)
+    select rid, task_date, p_new, count from daily_task_counts where rid = p_rid and task_name = p_old
+  on conflict (rid, task_date, task_name) do update set count = daily_task_counts.count + excluded.count;
+  delete from daily_task_counts where rid = p_rid and task_name = p_old;
+
+  update workers set task_name = p_new where rid = p_rid and task_name = p_old;
+
+  -- نرخ: ناوە نوێیەکە نرخی کۆنەکە وەردەگرێت (نرخی کۆن بۆ کەسانی تر دەمێنێتەوە)
+  insert into task_prices select p_new, price from task_prices where task_name = p_old on conflict do nothing;
+
+  -- ئەگەر سکریپتی ئەم کارمەندە هێشتا ناوە کۆنەکە بنێرێت، سێرڤەر دەیکات بە ناوە نوێیەکە (تەنها بۆ ئەم کەسە)
+  update worker_task_aliases set new_name = p_new where rid = p_rid and new_name = p_old;
+  insert into worker_task_aliases(rid, old_name, new_name) values (p_rid, p_old, p_new)
+  on conflict (rid, old_name) do update set new_name = excluded.new_name;
+
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- ---------- شەفت ----------
+update public.workers set shift = case when extract(hour from registered_at at time zone 'Asia/Baghdad') >= 16 then 2 when extract(hour from registered_at at time zone 'Asia/Baghdad') >= 8 then 1 else 0 end where shift is null;
+-- شەفتی ئێستا بەپێی کاتژمێری سێرڤەر (کاتی هەولێر)
+create or replace function public.shift_now() returns smallint language sql stable as $$
+  select (case when h >= 16 then 2 when h >= 8 then 1 else 0 end)::smallint
+  from (select extract(hour from now() at time zone 'Asia/Baghdad') as h) x $$;
+
+-- register_worker: پارامیتەری ٤ەم (شەفت) ئارەزوومەندانەیە. ئەگەر نەنێردرا، شەفت بەپێی کاتژمێر دیاری دەکرێت.
+create or replace function public.register_worker(p_rid text, p_person_name text, p_task_name text, p_shift int default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v text := resolve_task(p_rid, p_task_name);
+  s smallint := (case when p_shift in (0, 1, 2) then p_shift else public.shift_now() end)::smallint;
+begin
+  insert into workers(rid, person_name, task_name, registered_at, last_seen_at, is_active, closed_at, last_send_status, last_send_error, shift)
+  values (p_rid, p_person_name, v, now(), now(), true, null, 'Registered', null, s)
+  on conflict (rid) do update set person_name = excluded.person_name, task_name = excluded.task_name,
+    last_seen_at = now(), is_active = true, closed_at = null, last_send_status = 'Registered', last_send_error = null,
+    shift = case when p_shift in (0, 1, 2) then s else coalesce(workers.shift, s) end;
+  return jsonb_build_object('ok', true, 'rid', p_rid, 'server_time', now());
+end $$;
+
+-- dash_workers: شەفت و کاتی تۆمارکردنیش دەگەڕێنێتەوە
+create or replace function public.dash_workers(p_user text, p_pass text)
+returns table(rid text, person_name text, task_name text, last_seen_at timestamptz, is_active boolean,
+              last_send_at timestamptz, last_send_status text, last_send_error text, registered_at timestamptz, shift smallint)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not dash_ok(p_user, p_pass) then raise exception 'unauthorized'; end if;
+  return query select w.rid, w.person_name, w.task_name, w.last_seen_at, w.is_active,
+                      w.last_send_at, w.last_send_status, w.last_send_error, w.registered_at, w.shift
+               from workers w order by w.registered_at desc, w.rid;
+end $$;
+
+-- گۆڕینی شەفتی کارمەندێک لە ماڵپەڕەوە
+create or replace function public.set_worker_shift(p_user text, p_pass text, p_rid text, p_shift int) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  if not dash_ok(p_user, p_pass) then raise exception 'unauthorized'; end if;
+  if p_shift is null or p_shift not in (0, 1, 2) then return jsonb_build_object('ok', false, 'error', 'Invalid shift'); end if;
+  update workers set shift = p_shift where rid = p_rid;
+  if not found then return jsonb_build_object('ok', false, 'error', 'Worker not found'); end if;
+  return jsonb_build_object('ok', true);
+end $$;
+
+
 -- ---------- مافەکان ----------
 grant execute on function
-  public.register_worker(text,text,text), public.record_shifts(text,text,int,date), public.record_batch(text,jsonb), public.record_shift(text,text),
+  public.register_worker(text,text,text,int), public.shift_now(), public.set_worker_shift(text,text,text,int), public.record_shifts(text,text,int,date), public.record_batch(text,jsonb), public.record_shift(text,text),
   public.heartbeat_worker(text), public.deactivate_worker(text), public.report_worker_error(text,text),
   public.reset_worker_counts(text), public.server_now(), public.dash_login(text,text),
   public.dash_workers(text,text), public.dash_prices(text,text),
   public.month_by_worker(text,text,date,date), public.month_by_day(text,text,date,date),
   public.day_detail(text,text,date), public.month_rows(text,text,date,date),
-  public.delete_worker(text,text,text), public.set_task_price(text,text,text,numeric), public.rename_task(text,text,text,text)
+  public.delete_worker(text,text,text), public.set_task_price(text,text,text,numeric), public.rename_task(text,text,text,text),
+  public.rename_worker_task(text,text,text,text,text)
 to anon;
 
 notify pgrst, 'reload schema';

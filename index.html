@@ -829,12 +829,14 @@
     </div>
     <div class="hero-actions">
       <button id="theme" title="گۆڕینی ڕەنگی ڕووناک / تاریک">🌓 ڕەش / سپی</button>
+      <button id="qcbtn" class="pri" title="بەشی QC: ژمارەی فۆرمەکان">✅ QC</button>
       <button id="csv" title="داگرتنی داتا لە فایلی CSV">⬇ CSV ی مانگ</button>
       <button id="pdf" class="pri" title="چاپکردنی ڕاپۆرتی فەرمی A4">🖨 PDF A4</button>
       <button id="refresh" class="pri" title="نوێکردنەوەی خێرای داتاکان">🔄 نوێکردنەوە</button>
       <button id="out" title="چوونەدەرەوە">⎋ دەرچوون</button>
     </div>
   </header>
+  <section id="qc" style="display:none;margin:12px 0;padding:14px;border-radius:14px;background:var(--card,rgba(255,255,255,.92));overflow:auto"></section>
 
   <!-- Filter & Navigation Bar -->
   <section class="bar">
@@ -850,6 +852,13 @@
       <option value="all">هەموو دۆخەکان</option>
       <option value="on">تەنها چالاکەکان</option>
       <option value="off">تەنها ناچالاکەکان</option>
+    </select>
+
+    <select id="shiftf">
+      <option value="all">هەردوو شەفت</option>
+      <option value="1">☀️ شەفتی ڕۆژ (08:00 – 16:00)</option>
+      <option value="2">🌙 شەفتی شەو (16:00 – 24:00)</option>
+      <option value="0">🌌 دوای نیوەشەو</option>
     </select>
 
     <div class="status-box">
@@ -1024,10 +1033,30 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({
   "'": "&#39;"
 }[c]));
 const ymd = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const workDay = () => { const d = new Date(); if (d.getHours() < 8) d.setDate(d.getDate() - 1); return ymd(d); };
 
-let CR = null, started = false, W = [], P = {}, BW = [], BD = [], TD = [], SD = [], off = 0, selDay = ymd(new Date());
+let CR = null, started = false, W = [], P = {}, BW = [], BD = [], TD = [], SD = [], off = 0, selDay = workDay();
 const price = t => Number(P[t] || 0);
 const A = o => ({ ...CR, ...o });
+
+const shiftOf = p => {
+  if (p && p.shift !== undefined && p.shift !== null) return Number(p.shift);
+  if (!p || !p.registered_at) return 9;
+  const h = new Date(p.registered_at).getHours();
+  return h >= 16 ? 2 : h >= 8 ? 1 : 0;
+};
+const SHIFT_NAME = {
+  1: "☀️ شەفتی یەکەم (ڕۆژ) · 08:00 – 16:00",
+  2: "🌙 شەفتی دووەم (شەو) · 16:00 – 24:00",
+  0: "🌌 دوای نیوەشەو · 00:00 – 08:00",
+  9: "⚠️ کاتی شەفت نەزانراوە — patch_shift_time.sql لە Supabase Run بکە"
+};
+const shiftBadge = rid => {
+  const p = W.find(x => x.rid == rid), k = shiftOf(p);
+  const lab = k == 1 ? "☀️ شەفتی ١" : k == 2 ? "🌙 شەفتی ٢" : k == 0 ? "🌌 دوای نیوەشەو" : "";
+  return lab ? ' <small style="font-weight:700;color:var(--mut)">' + lab + "</small>" : "";
+};
+const who = (rid, name) => "<b>" + esc(name) + "</b>" + shiftBadge(rid);
 
 async function page(path, body) {
   let out = [], o = 0;
@@ -1065,7 +1094,7 @@ const online = p => p.is_active && (Date.now() + off - new Date(p.last_seen_at).
 
 async function refresh() {
   try {
-    const R = range(), td = ymd(new Date()), t0 = Date.now();
+    const R = range(), td = workDay(), t0 = Date.now();
     const [sn, w, pr, bw, bd, tdd] = await Promise.all([
       rpc("server_now"),
       page("rpc/dash_workers", A()),
@@ -1095,6 +1124,14 @@ async function refresh() {
   }
 }
 
+function renderQC(mc, tc) {
+  const q = W.filter(p => /^qc/i.test(p.task_name || ""));
+  const a = q.reduce((s, p) => s + (tc[p.rid] || 0), 0), m = q.reduce((s, p) => s + (mc[p.rid] || 0), 0);
+  $("qc").innerHTML = '<h3 style="margin:0 0 10px">QC — فۆرمەکان</h3><div style="display:flex;gap:24px;margin-bottom:10px;font-weight:800"><span>ئەمڕۆ: ' + N(a) + '</span><span>مانگ: ' + N(m) + '</span><span>کارمەند: ' + N(q.length) + '</span></div>' +
+    '<table style="min-width:420px"><thead><tr><th>کارمەند</th><th>دۆخ</th><th>فۆرمی ئەمڕۆ</th><th>فۆرمی مانگ</th><th>دوایین پەیوەندی</th></tr></thead><tbody>' +
+    (q.map(p => `<tr><td>${who(p.rid, p.person_name)}</td><td><span class="pill ${online(p) ? "on" : "off"}">${online(p) ? "چالاک" : "ناچالاک"}</span></td><td style="direction:ltr;text-align:left;font-weight:800;color:var(--red)">${N(tc[p.rid])}</td><td style="direction:ltr;text-align:left;font-weight:700">${N(mc[p.rid])}</td><td><small>${new Date(p.last_seen_at).toLocaleString()}</small></td></tr>`).join("") || '<tr><td colspan="5" style="text-align:center;padding:18px">هیچ کارمەندێکی QC نییە</td></tr>') + '</tbody></table>';
+}
+
 function render() {
   const R = range(), mc = {}, mm = {}, tc = {};
   BW.forEach(x => {
@@ -1102,6 +1139,7 @@ function render() {
     mm[x.rid] = (mm[x.rid] || 0) + x.total * price(x.task_name);
   });
   TD.forEach(x => tc[x.rid] = (tc[x.rid] || 0) + x.count);
+  renderQC(mc, tc);
 
   const on = W.filter(online);
   const tS = TD.reduce((s, x) => s + x.count, 0);
@@ -1120,10 +1158,16 @@ function render() {
   const q = $("search").value.trim().toLowerCase(), f = $("filter").value;
   const sh = W.filter(p => (!q || (p.person_name + " " + p.task_name).toLowerCase().includes(q)) && (f == "all" || (f == "on") == online(p)));
 
-  $("rows").innerHTML = sh.map(p => {
+  const rowHtml = p => {
     const o = online(p);
+    const k = shiftOf(p);
     return `<tr>
-      <td><b>${esc(p.person_name)}</b></td>
+      <td>${who(p.rid, p.person_name)}
+        <select class="shs" data-rid="${esc(p.rid)}" title="گۆڕینی شەفت" style="padding:3px 6px;font-size:12px;margin-inline-start:6px">
+          <option value="1" ${k == 1 ? "selected" : ""}>☀️ شەفتی ١ (ڕۆژ)</option>
+          <option value="2" ${k == 2 ? "selected" : ""}>🌙 شەفتی ٢ (شەو)</option>
+          <option value="0" ${k == 0 ? "selected" : ""}>🌌 دوای نیوەشەو</option>
+        </select></td>
       <td>
         <span class="te" data-t="${esc(p.task_name)}" data-rid="${esc(p.rid)}" title="دەستکاری تاسک">
           ${esc(p.task_name)} ✎
@@ -1139,9 +1183,27 @@ function render() {
         <button class="del" data-rid="${esc(p.rid)}" data-n="${esc(p.person_name)}">🗑 سڕینەوە</button>
       </td>
     </tr>`;
-  }).join("") || '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--mut);">هیچ کارمەندێک نییە</td></tr>';
+  };
+
+  const sf = $("shiftf").value;
+  const shown = sh.filter(p => sf == "all" || shiftOf(p) == Number(sf));
+  let rhtml = "";
+  [1, 2, 0, 9].forEach(k => {
+    const g = shown.filter(p => shiftOf(p) == k)
+      .sort((a, b) => new Date(b.registered_at || 0) - new Date(a.registered_at || 0));
+    if (!g.length) return;
+    const t = g.reduce((s, p) => s + (tc[p.rid] || 0), 0);
+    const m = g.reduce((s, p) => s + (mc[p.rid] || 0), 0);
+    rhtml += '<tr class="tg"><td colspan="9">' + SHIFT_NAME[k] +
+      "<span>ئەمڕۆ: " + N(t) + "</span><span>مانگ: " + N(m) + "</span><span>کارمەند: " + g.length + "</span></td></tr>" +
+      g.map(rowHtml).join("");
+  });
+  $("rows").innerHTML = rhtml || '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--mut);">هیچ کارمەندێک نییە</td></tr>';
 
   document.querySelectorAll(".del").forEach(b => b.onclick = () => delFlow(b.dataset.rid, b.dataset.n));
+  document.querySelectorAll(".shs").forEach(sel => sel.onchange = async () => {
+    if (await admin("set_worker_shift", { p_rid: sel.dataset.rid, p_shift: Number(sel.value) })) refresh();
+  });
 
   if (!$("tasks").contains(document.activeElement)) {
     const nmr = Object.fromEntries(W.map(x => [x.rid, x.person_name]));
@@ -1164,7 +1226,7 @@ function render() {
     $("tasks").innerHTML = '<table style="min-width:520px"><thead><tr><th>کارمەند</th><th>ناوی تاسک</th><th>نرخ (بۆ هەر یەک)</th><th>کۆی مانگ</th><th style="text-align:center">کردار</th></tr></thead><tbody>' +
       (groups.map((g, i) => `<tr class="tg"><td colspan="5">${i + 1}. ${esc(g.t)} <span>کۆی مانگ: ${N(g.total)}</span></td></tr>` +
         g.people.map(p => `<tr data-rid="${esc(p.rid)}">
-          <td><b>${esc(nmr[p.rid])}</b></td>
+          <td>${who(p.rid, nmr[p.rid])}</td>
           <td><input value="${esc(g.t)}" data-old="${esc(g.t)}" class="tn" style="font-weight:700"></td>
           <td><input type="number" min="0" step="any" value="${price(g.t)}" class="tp"></td>
           <td style="direction:ltr; text-align:left; font-weight:800">${N(p.c)}</td>
@@ -1208,7 +1270,7 @@ function render() {
   $("dTitle").textContent = "وردەکاری ڕۆژی " + selDay;
 
   $("detail").innerHTML = SD.map(x => `<tr>
-    <td><b>${esc(nm[x.rid] || x.rid)}</b></td>
+    <td>${who(x.rid, nm[x.rid] || x.rid)}</td>
     <td>
       <span class="te" data-t="${esc(x.task_name)}" data-rid="${esc(x.rid)}" title="دەستکاری تاسک">
         ${esc(x.task_name)} ✎
@@ -1501,9 +1563,11 @@ const setTheme = t => {
 try { setTheme(localStorage.getItem("th") || "light"); } catch (e) {}
 
 $("theme").onclick = () => setTheme(document.documentElement.dataset.theme == "dark" ? "light" : "dark");
+$("qcbtn").onclick = () => { const e = $("qc"); e.style.display = e.style.display == "none" ? "block" : "none"; };
 $("refresh").onclick = refresh;
 $("search").oninput = render;
 $("filter").onchange = render;
+$("shiftf").onchange = render;
 $("month").value = ymd(new Date()).slice(0, 7);
 
 function start() {
